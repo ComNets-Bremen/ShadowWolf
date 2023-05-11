@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
 
+"""
+Combines images to compare for example the detections from different models
+
+Jens Dede, ComNets, University of Bremen, 2023
+"""
+
 import os
 import sys
 import argparse
