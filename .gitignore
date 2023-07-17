@@ -166,3 +166,6 @@ venv
 labelimg-venv
 example_images
 ground_truth
+
+# vim swap files
+*.swp
