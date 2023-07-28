@@ -6,6 +6,8 @@ import torch
 import importlib
 
 import datetime
+import time
+
 import cv2
 
 from pathlib import Path
@@ -63,6 +65,7 @@ class YoloDetectionClass(BaseClass):
 
         total_images = len(input_images)
         handled_images = 0
+        start_time_detection = time.time()
 
         logger.info("Starting detection...")
         for i in batch(input_images, self.getModuleConfig().get("detect_batchsize", 4)):
@@ -100,7 +103,9 @@ class YoloDetectionClass(BaseClass):
                     f.writelines("\n".join(detections_rows))
                 handled_images += 1
 
-            logger.info(f"Finished image {handled_images} out of {total_images}: {(handled_images/total_images*100.0):3.1f}% done.")
+            # Calculate the remaining time
+            time_left = max(((time.time()-start_time_detection)/(handled_images/total_images)) - (time.time() - start_time_detection), 0)
+            logger.info(f"Finished image {handled_images} out of {total_images}: {(handled_images/total_images*100.0):3.1f}% done. Estimated time left: {time_left/60.0:4.1f} minutes")
 
 
         ctx["steps"].append({
