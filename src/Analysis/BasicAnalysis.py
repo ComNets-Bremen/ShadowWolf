@@ -3,7 +3,6 @@
 import os
 import glob
 import PIL.Image
-from PIL.ExifTags import TAGS
 
 import logging
 logger = logging.getLogger(__name__)
