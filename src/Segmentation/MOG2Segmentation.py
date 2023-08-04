@@ -134,7 +134,7 @@ class MOG2Class(BaseClass):
                 "extra_images_dir" : extra_images_dir,
             })
 
-        return ctx
+        return True, ctx
 
 if __name__ == "__main__":
     pass

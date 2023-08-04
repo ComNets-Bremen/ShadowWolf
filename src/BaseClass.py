@@ -46,11 +46,16 @@ class BaseClass:
             module = importlib.import_module(module_path, class_name)
             importlib.invalidate_caches()
             cls = getattr(module, class_name)
-            ctx = cls(i).run(ctx)
+            cont, ctx = cls(i).run(ctx)
 
             # Store the end context to a pickle
             with open(os.path.join(ctx["output_dir"], f"{i}_end_ctx.pickle"), "wb") as f:
                 pickle.dump(ctx, f)
+
+            # Previous step indicated to stop now
+            if not cont:
+                logger.info(f"Process stop was indicated by {class_name}. Check output for further information.")
+                break
 
         ctx["end"] = datetime.datetime.now().isoformat()
         ctx["duration"] = (datetime.datetime.fromisoformat(ctx["end"]) - datetime.datetime.fromisoformat(ctx["start"])).total_seconds()

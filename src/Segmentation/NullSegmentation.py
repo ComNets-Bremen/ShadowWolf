@@ -25,7 +25,7 @@ class NullSegmentationClass(BaseClass):
                 "sqlite_file" : self.getSqliteFile(ctx),
             })
 
-        return ctx
+        return True, ctx
 
 if __name__ == "__main__":
     pass

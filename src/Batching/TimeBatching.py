@@ -70,7 +70,7 @@ class TimeBatchingClass(BaseClass):
                 "num_images"  : sum([len(x) for x in imgdb_batches]),
             })
 
-        return ctx
+        return True, ctx
 
 if __name__ == "__main__":
     pass
