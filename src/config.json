@@ -28,6 +28,10 @@
             "dataclass": "Storage.DataStorage.SegmentDataStorage",
             "getter" : "getImages"
         },{
+            "name" : "Deduplication.Imagededup.ImagededupClass",
+            "deduplication_dataclass" : "Storage.DataStorage.SegmentDataStorage",
+            "deduplication_getter" : "getImages"
+        },{
             "name" : "Detection.YoloDetection.YoloDetectionClass",
             "detect_model" : "best.pt",
             "detect_repository" : "ultralytics/yolov5",
