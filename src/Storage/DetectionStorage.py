@@ -40,7 +40,7 @@ class Detection(Base):
 ## End Table definitions
 
 class DetectionStorage:
-    def __init__(self, file, input_dataclass, input_getter):
+    def __init__(self, file, input_dataclass=None, input_getter=None):
         self.file = file
         self.engine = create_engine(self.file)
         Base.metadata.create_all(self.engine)
@@ -64,6 +64,24 @@ class DetectionStorage:
 
             session.add(detection)
             session.commit()
+
+    def getImages(self):
+        ret = []
+        with Session(self.engine) as session:
+            for i in session.execute(select(Detection)).all():
+                ret.append({
+                    "image_fullpath" : i[0].image_fullpath,
+                    "confidence" : i[0].confidence,
+                    "detection_class" : i[0].detection_class,
+                    "detection_class_numeric" : i[0].detection_class_numeric,
+                    "x_min" : i[0].x_min,
+                    "y_min" : i[0].y_min,
+                    "x_max" : i[0].x_max,
+                    "y_max" : i[0].y_max
+                })
+
+        return ret
+
 
     def get_all_detections(self):
         with Session(self.engine) as session:
