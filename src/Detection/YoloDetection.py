@@ -126,11 +126,13 @@ class YoloDetectionClass(BaseClass):
             logger.info(f"Finished image {handled_images} out of {total_images}: {(handled_images/total_images*100.0):3.1f}% done. Estimated time left: {time_left/60.0:4.1f} minutes")
 
 
-        ctx["steps"].append({
-                "identifier" : self.getStepIdentifier(),
-                "sqlite_file" : self.getSqliteFile(ctx),
-            })
+        output_dict = dict()
+        for key in output_dirs:
+            output_dict[key] = output_dirs[key]
 
+        output_dict["identifier"] = self.getStepIdentifier()
+        output_dict["sqlite_file"] = self.getSqliteFile(ctx)
+        ctx["steps"].append(output_dict)
         return True, ctx
 
 if __name__ == "__main__":

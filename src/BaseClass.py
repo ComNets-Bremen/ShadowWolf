@@ -9,6 +9,8 @@ import logging
 import pickle
 import pprint
 
+import argparse
+
 from wolf_utils.misc import slugify
 
 logfile = "run_" + slugify(datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")) + "_logfile.log"
@@ -23,24 +25,41 @@ class BaseClass:
         with open(config, "r") as f:
             self.config = json.load(f)
 
-    def getNewContext(self):
-        output_dir = os.path.join(os.getcwd(), "output", slugify(datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + "_" + str(self.config_filename)))
-        Path(output_dir).mkdir(parents=True, exist_ok=True)
+    def getNewContext(self, output=None, cont=0):
+        if output is None:
+            output_dir = os.path.join(os.getcwd(), "output", slugify(datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + "_" + str(self.config_filename)))
+        else:
+            output_dir = output
+        logger.info(f"Using output directory {output_dir}")
 
-        ctx = dict()
-        ctx["start"] = datetime.datetime.now().isoformat()
-        ctx["config_filename"] = self.config_filename
-        ctx["output_dir"] = output_dir
-        ctx["steps"] = []
+        if Path(output_dir).exists() and cont>0:
+            with open(os.path.join(output_dir, f"{cont-1}_end_ctx.pickle"), "rb") as f:
+                ctx = pickle.load(f)
+            ctx["continue_step"] = cont
+            ctx["continue_start"] = datetime.datetime.now().isoformat()
+            print(ctx)
+            ctx["steps"] = ctx["steps"][:cont] # Remove old steps
+            print(ctx)
+        else:
+            Path(output_dir).mkdir(parents=True, exist_ok=True)
+            ctx = dict()
+            ctx["start"] = datetime.datetime.now().isoformat()
+            ctx["config_filename"] = self.config_filename
+            ctx["output_dir"] = output_dir
+            ctx["steps"] = []
+
+        if not "logfile" in ctx:
+            ctx["logfile"] = []
+        ctx["logfile"].append(logfile)
         return ctx
 
     def getSqliteFile(self, ctx, name="metadata.sqlite"):
         return "sqlite:///" + os.path.abspath(os.path.join(ctx["output_dir"], name))
 
-    def run(self, ctx=None):
+    def run(self, ctx=None, cont=0):
         if ctx is None:
             ctx = self.getNewContext()
-        for i, m in enumerate(self.config["modules"]):
+        for i, m in enumerate(self.config["modules"][cont:], start=cont):
             module_path, class_name = m["name"].rsplit('.', 1)
             logger.info(f"running {module_path} {class_name}")
             module = importlib.import_module(module_path, class_name)
@@ -57,8 +76,12 @@ class BaseClass:
                 logger.info(f"Process stop was indicated by {class_name}. Check output for further information.")
                 break
 
-        ctx["end"] = datetime.datetime.now().isoformat()
-        ctx["duration"] = (datetime.datetime.fromisoformat(ctx["end"]) - datetime.datetime.fromisoformat(ctx["start"])).total_seconds()
+        if "continue_start" in ctx:
+            ctx["continue_end"] = datetime.datetime.now().isoformat()
+            ctx["continue_duration"] = (datetime.datetime.fromisoformat(ctx["continue_end"]) - datetime.datetime.fromisoformat(ctx["continue_start"])).total_seconds()
+        else:
+            ctx["end"] = datetime.datetime.now().isoformat()
+            ctx["duration"] = (datetime.datetime.fromisoformat(ctx["end"]) - datetime.datetime.fromisoformat(ctx["start"])).total_seconds()
 
         pp = pprint.PrettyPrinter(indent=4)
         logger.info(f"Final context:\n {pp.pformat(ctx)}\n")
@@ -110,6 +133,15 @@ class BaseClass:
         return p
 
 if __name__ == "__main__":
-    bc = BaseClass()
-    ctx = bc.getNewContext()
-    bc.run(ctx)
+    parser = argparse.ArgumentParser(
+                    prog='ShadowWolf',
+                    description='A workflow for Animal detection and evaluation of the detections.',
+                    epilog=f'Jens Dede, ComNets University of Bremen, {datetime.date.today().year}')
+    parser.add_argument('-c', '--config', type=str, default="config.json", help="The config file in json format.")
+    parser.add_argument('-o', '--output', type=str, default=None, help="The output directory.")
+    parser.add_argument('-d', '--cont', type=int, default=0, help="Continue from a certain step. Defaults to 0 (i.e. start from the beginning).")
+    args = parser.parse_args()
+
+    bc = BaseClass(config=args.config)
+    ctx = bc.getNewContext(output=args.output, cont=args.cont)
+    bc.run(ctx, cont=args.cont)
