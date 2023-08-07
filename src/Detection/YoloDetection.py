@@ -132,6 +132,7 @@ class YoloDetectionClass(BaseClass):
 
         output_dict["identifier"] = self.getStepIdentifier()
         output_dict["sqlite_file"] = self.getSqliteFile(ctx)
+        output_dict["classes.txt"] = classes_path
         ctx["steps"].append(output_dict)
         return True, ctx
 
