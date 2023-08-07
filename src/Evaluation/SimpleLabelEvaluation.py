@@ -78,9 +78,10 @@ class SimpleLabelEvaluationClass(BaseClass):
 
 
         ctx["steps"].append({
-                "identifier" : self.getStepIdentifier(),
-                "sqlite_file" : self.getSqliteFile(ctx),
-                "images_for_simpleEval" : simple_eval_output
+            "identifier" : self.getStepIdentifier(),
+            "sqlite_file" : self.getSqliteFile(ctx),
+            "images_for_simpleEval" : simple_eval_output,
+            "return_data_directory" : simple_eval_input,
             })
 
         return continue_after_this_step, ctx

@@ -12,10 +12,12 @@ import pprint
 import argparse
 
 from wolf_utils.misc import slugify
+from wolf_utils.ColorLogger import CustomFormatter
 
 logfile = "run_" + slugify(datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")) + "_logfile.log"
-loghandlers = [logging.FileHandler(logfile), logging.StreamHandler()]
-logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s - %(message)s', level=logging.INFO, handlers=loghandlers)
+streamhandler = logging.StreamHandler()
+streamhandler.setFormatter(CustomFormatter())
+logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s - %(message)s', level=logging.INFO, handlers=[logging.FileHandler(logfile), streamhandler])
 logger = logging.getLogger(__name__)
 
 class BaseClass:
@@ -37,9 +39,7 @@ class BaseClass:
                 ctx = pickle.load(f)
             ctx["continue_step"] = cont
             ctx["continue_start"] = datetime.datetime.now().isoformat()
-            print(ctx)
             ctx["steps"] = ctx["steps"][:cont] # Remove old steps
-            print(ctx)
         else:
             Path(output_dir).mkdir(parents=True, exist_ok=True)
             ctx = dict()

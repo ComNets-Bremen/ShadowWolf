@@ -36,9 +36,9 @@ class YoloDetectionClass(BaseClass):
         logger.info(f"Config: {self.getModuleConfig()}")
 
         output_dirs = dict()
-        output_dirs["base"] = self.getCurrentDataDir(ctx)
-        output_dirs["labelled_images"] = os.path.join(output_dirs["base"], "labelled_images")
-        output_dirs["labels_images"] = os.path.join(output_dirs["base"], "labels_images")
+        output_dirs["base_path"] = self.getCurrentDataDir(ctx)
+        output_dirs["labelled_images"] = os.path.join(output_dirs["base_path"], "labelled_images")
+        output_dirs["labels_images"] = os.path.join(output_dirs["base_path"], "labels_images")
 
         for d in output_dirs:
             Path(output_dirs[d]).mkdir(parents=True, exist_ok=True)
