@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 from BaseClass import BaseClass
 from Storage.DetectionStorage import  DetectionStorage
 
-from wolf_utils.misc import batch
+from wolf_utils.misc import batch, delta_time_format
 
 
 class YoloDetectionClass(BaseClass):
@@ -123,8 +123,7 @@ class YoloDetectionClass(BaseClass):
 
             # Calculate the remaining time
             time_left = max(((time.time()-start_time_detection)/(handled_images/total_images)) - (time.time() - start_time_detection), 0)
-            logger.info(f"Finished image {handled_images} out of {total_images}: {(handled_images/total_images*100.0):3.1f}% done. Estimated time left: {time_left/60.0:4.1f} minutes")
-
+            logger.info(f"Finished image {handled_images} out of {total_images}: {(handled_images/total_images*100.0):3.1f}% done. Estimated time left: {delta_time_format(time_left)}")
 
         output_dict = dict()
         for key in output_dirs:
