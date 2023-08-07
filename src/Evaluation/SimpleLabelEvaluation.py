@@ -73,7 +73,8 @@ class SimpleLabelEvaluationClass(BaseClass):
 
             logger.critical(f"Exported images to \"{simple_eval_output}\". Upload to your SimpleEval server and wait for the votes.")
             logger.critical(f"Upload the resulting json file to \"{simple_eval_input}\" and re-run the script withe the following parameters:")
-            logger.critical(f"-d {self.run_num} -o {ctx['output_dir']}")
+            logger.critical(f"-d {self.run_num} -o {os.path.split(ctx['output_dir'])[1]}")
+            logger.critical(f"Recommended name for the project: \"{os.path.split(ctx['output_dir'])[1]}\"")
             continue_after_this_step = False
 
 
