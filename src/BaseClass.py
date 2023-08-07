@@ -97,7 +97,7 @@ class BaseClass:
         return self.getMainConfig()[key]
 
     def getLastConfigWithKey(self, key):
-        for i in range(self.run_num, 0, -1):
+        for i in range(self.run_num-1, 0, -1):
             if key in self.config["modules"][i]:
                 return self.config["modules"][i]
         return None
