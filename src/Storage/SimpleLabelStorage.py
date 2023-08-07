@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-
+import json
 import logging
 logger = logging.getLogger(__name__)
 
@@ -21,7 +21,7 @@ class Base(DeclarativeBase):
 
 
 class SimpleEvalSplit(Base):
-    __tablename__ = "simple_lable_split"
+    __tablename__ = "simple_label_split"
     id = mapped_column(Integer, primary_key=True)
     source_fullpath = mapped_column(String())
     dest_fullpath = mapped_column(String())
@@ -29,6 +29,7 @@ class SimpleEvalSplit(Base):
     y_min = mapped_column(Integer)
     x_max = mapped_column(Integer)
     y_max = mapped_column(Integer)
+    relative_votings = mapped_column(String())
 
     def __repr__(self):
         return f"Mapping: {self.source_fullpath} -> {self.dest_fullpath}"
@@ -66,11 +67,23 @@ class SimpleLabelStorage:
                     "x_min" : i[0].x_min,
                     "y_min" : i[0].y_min,
                     "x_max" : i[0].x_max,
-                    "y_max" : i[0].y_max
+                    "y_max" : i[0].y_max,
+                    "votings" : i[0].relative_votings,
                 })
 
         return ret
 
+    def set_relative_voting(self, image_name, votings):
+        if type(votings) is not str:
+            votings = json.dumps(votings)
+        with Session(self.engine) as session:
+            dataset = session.execute(select(SimpleEvalSplit).filter_by(dest_fullpath=image_name)).scalar_one()
+            dataset.relative_votings = votings
+            session.commit()
+
+    def get_relative_voting(self, image_name):
+        with Session(self.engine) as session:
+            return json.loads(session.execute(select(SimpleEvalSplit).filter_by(dest_fullpath=image_name)).scalar_one().relative_votings)
 
     def get_all_detections(self):
         with Session(self.engine) as session:

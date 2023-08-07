@@ -7,6 +7,7 @@ import cv2
 import uuid
 
 import importlib
+import json
 
 import logging
 logger = logging.getLogger(__name__)
@@ -44,13 +45,19 @@ class SimpleLabelEvaluationClass(BaseClass):
         simple_eval_output = os.path.join(self.getCurrentDataDir(ctx), "simple_eval_out")
         Path(simple_eval_output).mkdir(parents=True, exist_ok=True)
 
-        simple_eval_input = simple_eval_output = os.path.join(self.getCurrentDataDir(ctx), "simple_eval_input")
+        simple_eval_input = os.path.join(self.getCurrentDataDir(ctx), "simple_eval_input")
         Path(simple_eval_input).mkdir(parents=True, exist_ok=True)
 
-        input_json_file = glob.glob(f"{simple_eval_input}*.json")
+        input_json_file = glob.glob(f"{simple_eval_input}/*.json")
         if len(input_json_file):
-            print("Continue with json file")
-            #TODO: Implement
+            logger.info(f"Found json file:{input_json_file[0]}. Will continue with storing results.")
+            with open(input_json_file[0], "r") as jf:
+                results = json.load(jf)
+
+            for won_images in results["images"]:
+                print(won_images)
+                ds.set_relative_voting(won_images["image_original_name"], won_images["relative_class_voting"])
+
             continue_after_this_step = True
 
         else:
