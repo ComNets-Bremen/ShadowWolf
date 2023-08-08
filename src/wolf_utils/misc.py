@@ -1,5 +1,11 @@
+import importlib
 import unicodedata
 import re
+
+import logging
+
+logger = logging.getLogger(__file__)
+
 
 def slugify(value, allow_unicode=False):
     """
@@ -17,13 +23,29 @@ def slugify(value, allow_unicode=False):
     value = re.sub(r'[^\w\s-]', '', value.lower())
     return re.sub(r'[-\s]+', '-', value).strip('-_')
 
+
 def batch(iterable, n=4):
     """Return a batch of iterables
     Returns a batch of iterables with a given size
     """
     l = len(iterable)
-    for ndx in range(0,l,n):
+    for ndx in range(0, l, n):
         yield iterable[ndx:min(ndx + n, l)]
+
+
+def getter_factory(dataclass, getter, *args, **kwargs):
+    """Return a getter from a given dataclass
+
+    Create an instance of a dataclass and return the corresponding getter.
+    """
+    logging.info(f"Getting \"{getter}\" for \"{dataclass}\"")
+    module_path, class_name = dataclass.rsplit('.', 1)
+    module = importlib.import_module(module_path, class_name)
+    importlib.invalidate_caches()
+    cls = getattr(module, class_name)
+    instance = cls(*args, **kwargs)
+    return getattr(instance, getter)
+
 
 def delta_time_format(seconds):
     """Return a meaningful string for the time left
@@ -31,12 +53,12 @@ def delta_time_format(seconds):
     """
     ret = []
     left = seconds
-    days = int(left / (60*60*24))
-    left = left - (days*60*60*24)
-    hours = int(left / (60*60))
-    left = left - (hours*60*60)
+    days = int(left / (60 * 60 * 24))
+    left = left - (days * 60 * 60 * 24)
+    hours = int(left / (60 * 60))
+    left = left - (hours * 60 * 60)
     minutes = int(left / 60)
-    left = left - (minutes*60)
+    left = left - (minutes * 60)
 
     if days > 1:
         ret.append(f"{days} days")
@@ -61,5 +83,3 @@ def delta_time_format(seconds):
         ret.append(f"{left} second")
 
     return " ".join(ret)
-
-
