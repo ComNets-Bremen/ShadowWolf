@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 from BaseClass import BaseClass
 from Storage.DetectionStorage import  DetectionStorage
 
-from wolf_utils.misc import batch, delta_time_format
+from wolf_utils.misc import batch, delta_time_format, getter_factory
 
 
 class YoloDetectionClass(BaseClass):
@@ -39,22 +39,20 @@ class YoloDetectionClass(BaseClass):
         output_dirs["base_path"] = self.getCurrentDataDir(ctx)
         output_dirs["labelled_images"] = os.path.join(output_dirs["base_path"], "labelled_images")
         output_dirs["labels_images"] = os.path.join(output_dirs["base_path"], "labels_images")
+        output_dirs["cut_to_detection"] = os.path.join(output_dirs["base_path"], "cut_to_detection")
 
         for d in output_dirs:
             Path(output_dirs[d]).mkdir(parents=True, exist_ok=True)
 
+        inputs = self.getModuleConfig()["inputs"]
+        if len(inputs) != 1:
+            raise ValueError(
+                f"Wrong number of inputs. This module is currently working with excactly one input file. You gave {len(inputs)}."
+                             )
 
-        last_module_with_getter = self.getLastConfigWithKey("getter")
-        input_dataclass, input_getter = last_module_with_getter["dataclass"], last_module_with_getter["getter"]
-        logger.info(f"Using {input_getter} from class {input_dataclass}")
-        module_path, class_name = input_dataclass.rsplit('.', 1)
-        module = importlib.import_module(module_path, class_name)
-        importlib.invalidate_caches()
-        input_Dataclass = getattr(module, class_name)
-        input_dc = input_Dataclass(self.getSqliteFile(ctx))
-        getter = getattr(input_dc, input_getter)
-
-        input_images = getter()
+        input_dataclass = inputs[0]["dataclass"]
+        input_getter    = inputs[0]["getter"]
+        input_images = getter_factory(input_dataclass, input_getter, self.getSqliteFile(ctx))()
 
         classes_path = os.path.join(output_dirs["labels_images"], "classes.txt")
         model_dir = os.path.dirname(os.path.realpath(__file__))
@@ -69,7 +67,6 @@ class YoloDetectionClass(BaseClass):
                 )
 
         detection_storage = DetectionStorage(self.getSqliteFile(ctx), input_dataclass, input_getter)
-
 
         total_images = len(input_images)
         handled_images = 0
@@ -93,16 +90,21 @@ class YoloDetectionClass(BaseClass):
                     continue
 
                 detections_rows = []
-                for detection in image[1].tolist():
+                for i, detection in enumerate(image[1].tolist()):
                     (x_min, y_min, x_max, y_max, confidence, cls) = detection
                     w = x_max - x_min
                     h = y_max - y_min
                     cls = int(cls)
                     cv2.rectangle(img_w_label, (int(x_min), int(y_min)), (int(x_max), int(y_max)), (0,0,255), 2)
                     cv2.putText(img_w_label, str(int(confidence*100)), (int(x_max)-int(w/2), int(y_max)-int(h/2)), cv2.FONT_HERSHEY_DUPLEX, 1, (0, 0, 255))
+                    cut_to_detection = img.copy()[round(y_min):round(y_max), round(x_min):round(x_max)]
+                    f, e = os.path.splitext(output_filename)
+                    cut_image = os.path.join(output_dirs["cut_to_detection"], f"{f}_{i}{e}")
+                    cv2.imwrite(cut_image, cut_to_detection)
                     logger.info(f"Detection: class {cls} ({classes[cls]}), confidence {(confidence*100.0):3.1f}% in image {output_filename}")
                     detection_storage.store(
                         image[0],
+                        cut_image,
                         classes[cls],
                         cls,
                         confidence,

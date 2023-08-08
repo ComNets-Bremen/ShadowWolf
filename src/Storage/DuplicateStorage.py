@@ -30,7 +30,6 @@ class DuplicateImage(Base):
     __tablename__ = "duplicate_image"
     id = mapped_column(Integer, primary_key=True)
     fullpath = mapped_column(String())
-    source_dataclass = mapped_column(String())
     right_images = relationship(
             "DuplicateImage",
             secondary=image_to_image,
@@ -41,22 +40,21 @@ class DuplicateImage(Base):
 
 
     def __repr__(self):
-        return f"Source class: {self.source_dataclass}, Image:  {self.fullpath}"
+        return f"Image:  {self.fullpath}"
 
 ## End Table definitions
 
 
 
 class DuplicateImageStorage:
-    def __init__(self, file, source_dataclass):
-        self.source_dataclass = source_dataclass
+    def __init__(self, file):
         self.file = file
         self.engine = create_engine(self.file)
         Base.metadata.create_all(self.engine)
 
     def get_image(self, fullpath):
         with Session(self.engine) as session:
-            img = session.execute(select(DuplicateImage).where(DuplicateImage.fullpath == fullpath).where(DuplicateImage.source_dataclass==self.source_dataclass)).one_or_none()
+            img = session.execute(select(DuplicateImage).where(DuplicateImage.fullpath == fullpath)).one_or_none()
             if img is not None:
                 return img
             else: # Image does not exist in DB
@@ -64,25 +62,24 @@ class DuplicateImageStorage:
                 session.add(
                         DuplicateImage(
                               fullpath=fullpath,
-                              source_dataclass=self.source_dataclass
                               )
                         )
                 session.commit()
-                return session.execute(select(DuplicateImage).where(DuplicateImage.fullpath == fullpath).where(DuplicateImage.source_dataclass==self.source_dataclass)).one_or_none()
+                return session.execute(select(DuplicateImage).where(DuplicateImage.fullpath == fullpath)).one_or_none()
 
     def add_duplicate(self, original_image, duplicate):
         with Session(self.engine) as session:
-            orig_image = session.execute(select(DuplicateImage).where(DuplicateImage.fullpath == original_image).where(DuplicateImage.source_dataclass==self.source_dataclass)).one_or_none()
+            orig_image = session.execute(select(DuplicateImage).where(DuplicateImage.fullpath == original_image)).one_or_none()
             if orig_image is None:
-                session.add(DuplicateImage(fullpath=original_image, source_dataclass=self.source_dataclass))
+                session.add(DuplicateImage(fullpath=original_image))
                 session.commit()
-                orig_image = session.execute(select(DuplicateImage).where(DuplicateImage.fullpath == original_image).where(DuplicateImage.source_dataclass==self.source_dataclass)).one_or_none()
+                orig_image = session.execute(select(DuplicateImage).where(DuplicateImage.fullpath == original_image)).one_or_none()
 
-            dup_image = session.execute(select(DuplicateImage).where(DuplicateImage.fullpath == duplicate).where(DuplicateImage.source_dataclass==self.source_dataclass)).one_or_none()
+            dup_image = session.execute(select(DuplicateImage).where(DuplicateImage.fullpath == duplicate)).one_or_none()
             if dup_image is None:
-                session.add(DuplicateImage(fullpath=duplicate, source_dataclass=self.source_dataclass))
+                session.add(DuplicateImage(fullpath=duplicate))
                 session.commit()
-                dup_image = session.execute(select(DuplicateImage).where(DuplicateImage.fullpath == duplicate).where(DuplicateImage.source_dataclass==self.source_dataclass)).one_or_none()
+                dup_image = session.execute(select(DuplicateImage).where(DuplicateImage.fullpath == duplicate)).one_or_none()
 
             orig_image = orig_image[0]
             dup_image = dup_image[0]
@@ -93,7 +90,7 @@ class DuplicateImageStorage:
 
     def get_similar(self, fullname):
         with Session(self.engine) as session:
-            img = session.execute(select(DuplicateImage).where(DuplicateImage.fullpath==fullname).where(DuplicateImage.source_dataclass==self.source_dataclass)).one_or_none()
+            img = session.execute(select(DuplicateImage).where(DuplicateImage.fullpath==fullname)).one_or_none()
             if img is None:
                 return None
             similar_images = [i.fullpath for i in img[0].right_images]
@@ -110,7 +107,7 @@ class DuplicateImageStorage:
 
     def get_all_images(self):
         with Session(self.engine) as session:
-            return session.execute(select(DuplicateImage).where(DuplicateImage.source_dataclass==self.source_dataclass)).all()
+            return session.execute(select(DuplicateImage)).all()
 
 
 if __name__ == "__main__":

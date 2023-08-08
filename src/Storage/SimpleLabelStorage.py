@@ -23,12 +23,10 @@ class Base(DeclarativeBase):
 class SimpleEvalSplit(Base):
     __tablename__ = "simple_label_split"
     id = mapped_column(Integer, primary_key=True)
+    source_class = mapped_column(String())
+    source_getter = mapped_column(String())
     source_fullpath = mapped_column(String())
     dest_fullpath = mapped_column(String())
-    x_min = mapped_column(Integer)
-    y_min = mapped_column(Integer)
-    x_max = mapped_column(Integer)
-    y_max = mapped_column(Integer)
     relative_votings = mapped_column(String())
 
     def __repr__(self):
@@ -43,15 +41,13 @@ class SimpleLabelStorage:
         self.engine = create_engine(self.file)
         Base.metadata.create_all(self.engine)
 
-    def store(self, src_file, dest_file, x_min, y_min, x_max, y_max):
+    def store(self, source_class, source_getter, src_file, dest_file):
         with Session(self.engine) as session:
             detection = SimpleEvalSplit(
+                source_class = source_class,
+                source_getter = source_getter,
                 source_fullpath = src_file,
                 dest_fullpath   = dest_file,
-                x_min = x_min,
-                y_min = y_min,
-                x_max = x_max,
-                y_max = y_max,
             )
 
             session.add(detection)
@@ -64,10 +60,8 @@ class SimpleLabelStorage:
                 ret.append({
                     "source_fullpath" : i[0].source_fullpath,
                     "dest_fullpath" : i[0].dest_fullpath,
-                    "x_min" : i[0].x_min,
-                    "y_min" : i[0].y_min,
-                    "x_max" : i[0].x_max,
-                    "y_max" : i[0].y_max,
+                    "source_class" : i[0].source_class,
+                    "source_getter" : i[0].source_getter,
                     "votings" : i[0].relative_votings,
                 })
 

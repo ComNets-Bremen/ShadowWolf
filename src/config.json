@@ -25,25 +25,45 @@
             "segmentation_detector_min_wh" : 50,
             "average_image_percentage" : 20,
             "average_image_min_images" : 5,
-            "dataclass": "Storage.DataStorage.SegmentDataStorage",
-            "getter" : "getImages"
+            "inputs" : [
+                {
+                    "dataclass" : "Storage.DataStorage.BatchingDataStorage",
+                    "getter"    : "getBatches"
+                }
+            ]
         },{
             "name" : "Deduplication.Imagededup.ImagededupClass",
-            "deduplication_dataclass" : "Storage.DataStorage.SegmentDataStorage",
-            "deduplication_getter" : "getImages"
+            "inputs" : [
+                {
+                    "dataclass" : "Storage.DataStorage.SegmentDataStorage",
+                    "getter"    : "getImages"
+                }
+            ]
         },{
             "name" : "Detection.YoloDetection.YoloDetectionClass",
             "detect_model" : "best.pt",
             "detect_repository" : "ultralytics/yolov5",
             "detect_force_reload" : false,
             "detect_batchsize" : 4,
-            "detect_input_path_ctx" : "segment_output_dir",
-            "detect_output_path_ctx" : "detections_output_dir",
+            "inputs" : [
+                {
+                    "dataclass" : "Storage.DataStorage.SegmentDataStorage",
+                    "getter"    : "getImages"
+                }
+            ],
             "dataclass" : "Storage.DetectionStorage.DetectionStorage",
             "getter" : "getImages"
         },{
-            "name" : "Evaluation.SimpleLabelEvaluation.SimpleLabelEvaluationClass"
-
+            "name" : "Evaluation.SimpleLabelEvaluation.SimpleLabelEvaluationClass",
+            "inputs" : [
+                {
+                    "dataclass" :  "Storage.DetectionStorage.DetectionStorage",
+                    "getter"    :  "getCutImages"
+                },{
+                    "dataclass" : "Storage.DataStorage.SegmentDataStorage",
+                    "getter"    : "getImages"
+                }
+            ]
         }
     ]
 

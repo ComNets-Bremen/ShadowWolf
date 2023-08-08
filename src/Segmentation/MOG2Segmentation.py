@@ -11,10 +11,13 @@ from imutils import contours
 import datetime
 
 import logging
+
+from wolf_utils.misc import getter_factory
+
 logger = logging.getLogger(__name__)
 
 from BaseClass import BaseClass
-from Storage.DataStorage import BatchingDataStorage, SegmentDataStorage
+from Storage.DataStorage import SegmentDataStorage
 
 from wolf_utils.ImageHandling import get_avg_image, filter_small_boxes, group_rectangles, get_greycount, extend_boxes
 
@@ -28,8 +31,6 @@ class MOG2Class(BaseClass):
     def run(self, ctx):
         logger.info(f"Identifier: {self.getStepIdentifier()}")
         logger.info(f"Config: {self.getModuleConfig()}")
-        ds = BatchingDataStorage(self.getSqliteFile(ctx))
-
         segment_output_dir = os.path.join(self.getCurrentDataDir(ctx), self.getModuleConfig()["segments_dir"])
         Path(segment_output_dir).mkdir(parents=True, exist_ok=True)
 
@@ -39,8 +40,15 @@ class MOG2Class(BaseClass):
             Path(extra_images_dir).mkdir(parents=True, exist_ok=True)
 
         segments_db = SegmentDataStorage(self.getSqliteFile(ctx))
+        inputs = self.getModuleConfig()["inputs"]
+        if len(inputs) != 1:
+            raise ValueError(
+                f"Wrong number of inputs. This module is currently working with excactly one input file. You gave {len(inputs)}."
+            )
 
-        for batch_num, batch in enumerate(ds.getBatches()):
+        batches = getter_factory(inputs[0]["dataclass"], inputs[0]["getter"], self.getSqliteFile(ctx))()
+
+        for batch_num, batch in enumerate(batches):
             logger.info(f"Handling batch number {batch_num+1}")
             images_raw = [image.fullpath for image in batch[0].images]
             bgsubtractor = cv2.createBackgroundSubtractorMOG2(

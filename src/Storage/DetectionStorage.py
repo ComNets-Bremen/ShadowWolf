@@ -24,6 +24,7 @@ class Detection(Base):
     __tablename__ = "detected_image"
     id = mapped_column(Integer, primary_key=True)
     image_fullpath = mapped_column(String())
+    cut_image =mapped_column(String())
     source_dataclass = mapped_column(String())
     source_datagetter = mapped_column(String())
     detection_class = mapped_column(String)
@@ -47,10 +48,11 @@ class DetectionStorage:
         self.input_dataclass = input_dataclass
         self.input_getter = input_getter
 
-    def store(self, fullpath, detection_class, detection_class_numeric, confidence, x_min, y_min, x_max, y_max):
+    def store(self, fullpath, cut_image, detection_class, detection_class_numeric, confidence, x_min, y_min, x_max, y_max):
         with Session(self.engine) as session:
             detection = Detection(
                 image_fullpath = fullpath,
+                cut_image = cut_image,
                 source_dataclass = self.input_dataclass,
                 source_datagetter = self.input_getter,
                 detection_class = detection_class,
@@ -71,6 +73,7 @@ class DetectionStorage:
             for i in session.execute(select(Detection)).all():
                 ret.append({
                     "image_fullpath" : i[0].image_fullpath,
+                    "cut_image" : i[0].cut_image,
                     "confidence" : i[0].confidence,
                     "detection_class" : i[0].detection_class,
                     "detection_class_numeric" : i[0].detection_class_numeric,
@@ -81,6 +84,10 @@ class DetectionStorage:
                 })
 
         return ret
+
+    def getCutImages(self):
+        with Session(self.engine) as session:
+            return session.execute(select(Detection.cut_image)).scalars().all()
 
 
     def get_all_detections(self):
