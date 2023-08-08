@@ -1,14 +1,11 @@
 #!/usr/bin/env python3
 
 import os
-import glob
 
 from pathlib import Path
 import cv2
 import imutils
 from imutils import contours
-
-import datetime
 
 import logging
 
@@ -143,6 +140,7 @@ class MOG2Class(BaseClass):
             })
 
         return True, ctx
+
 
 if __name__ == "__main__":
     pass

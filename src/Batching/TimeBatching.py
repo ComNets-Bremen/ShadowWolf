@@ -1,17 +1,11 @@
 #!/usr/bin/env python3
 
-import os
-import glob
-import PIL.Image
-from PIL.ExifTags import TAGS
-
 import datetime
 
 import logging
 logger = logging.getLogger(__name__)
 
 from BaseClass import BaseClass
-from wolf_utils.PILhelper import getAllExif, isGray
 from Storage.DataStorage import BatchingDataStorage, BasicAnalysisDataStorage
 
 ## Create batches based on the image timestamp
@@ -23,7 +17,6 @@ class TimeBatchingClass(BaseClass):
     def run(self, ctx):
         logger.info(f"Identifier: {self.getStepIdentifier()}")
         logger.info(f"Config: {self.getModuleConfig()}")
-        images = glob.glob(self.getInputData() + "/*." + self.getMainConfig()["image_filetype"])
 
         ds = BatchingDataStorage(self.getSqliteFile(ctx))
         analysis_storage = BasicAnalysisDataStorage(self.getSqliteFile(ctx))

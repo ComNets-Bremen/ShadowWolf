@@ -1,11 +1,7 @@
 #!/usr/bin/env python3
 
 import os
-import glob
 import torch
-import importlib
-
-import datetime
 import time
 
 import cv2
@@ -136,6 +132,7 @@ class YoloDetectionClass(BaseClass):
         output_dict["classes.txt"] = classes_path
         ctx["steps"].append(output_dict)
         return True, ctx
+
 
 if __name__ == "__main__":
     pass
