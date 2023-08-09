@@ -24,6 +24,9 @@ class ImagededupClass(BaseClass):
             getter = getter_factory(input_dataclass, input_cls["getter"], self.getSqliteFile(ctx))
             input_images.extend(getter())
 
+        # Unify list, remove duplicates
+        input_images = list(dict.fromkeys(input_images))
+
         hasher = PHash() # TODO: Make configurable
 
         encodings = dict()
