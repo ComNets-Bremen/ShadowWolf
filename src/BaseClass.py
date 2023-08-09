@@ -4,6 +4,7 @@ import os
 import json
 import importlib
 import datetime
+import shutil
 from pathlib import Path
 import logging
 import pickle
@@ -11,7 +12,7 @@ import pprint
 
 import argparse
 
-from wolf_utils.misc import slugify
+from wolf_utils.misc import slugify, getter_factory
 from wolf_utils.ColorLogger import CustomFormatter
 
 logfile = "run_" + slugify(datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")) + "_logfile.log"
@@ -47,6 +48,7 @@ class BaseClass:
             ctx["config_filename"] = self.config_filename
             ctx["output_dir"] = output_dir
             ctx["steps"] = []
+            shutil.copy(self.config_filename, output_dir)
 
         if not "logfile" in ctx:
             ctx["logfile"] = []
@@ -60,12 +62,7 @@ class BaseClass:
         if ctx is None:
             ctx = self.getNewContext()
         for i, m in enumerate(self.config["modules"][cont:], start=cont):
-            module_path, class_name = m["name"].rsplit('.', 1)
-            logger.info(f"running {module_path} {class_name}")
-            module = importlib.import_module(module_path, class_name)
-            importlib.invalidate_caches()
-            cls = getattr(module, class_name)
-            cont, ctx = cls(i).run(ctx)
+            cont, ctx = getter_factory(m["name"], "run", i)(ctx)
 
             # Store the end context to a pickle
             with open(os.path.join(ctx["output_dir"], f"{i}_end_ctx.pickle"), "wb") as f:
@@ -73,7 +70,7 @@ class BaseClass:
 
             # Previous step indicated to stop now
             if not cont:
-                logger.info(f"Process stop was indicated by {class_name}. Check output for further information.")
+                logger.info(f"Process stop was indicated by {m['name']}. Check output for further information.")
                 break
 
         if "continue_start" in ctx:
