@@ -32,14 +32,6 @@
                 }
             ]
         },{
-            "name" : "Deduplication.Imagededup.ImagededupClass",
-            "inputs" : [
-                {
-                    "dataclass" : "Storage.DataStorage.SegmentDataStorage",
-                    "getter"    : "getImages"
-                }
-            ]
-        },{
             "name" : "Detection.YoloDetection.YoloDetectionClass",
             "detect_model" : "best.pt",
             "detect_repository" : "ultralytics/yolov5",
@@ -54,6 +46,17 @@
             "dataclass" : "Storage.DetectionStorage.DetectionStorage",
             "getter" : "getImages"
         },{
+            "name" : "Deduplication.Imagededup.ImagededupClass",
+            "inputs" : [
+                {
+                    "dataclass" : "Storage.DataStorage.SegmentDataStorage",
+                    "getter"    : "getImages"
+                },{
+                    "dataclass" : "Storage.DetectionStorage.DetectionStorage",
+                    "getter"    : "getCutImages"
+                }
+            ]
+        },{
             "name" : "Evaluation.SimpleLabelEvaluation.SimpleLabelEvaluationClass",
             "inputs" : [
                 {
@@ -63,7 +66,11 @@
                     "dataclass" : "Storage.DataStorage.SegmentDataStorage",
                     "getter"    : "getImages"
                 }
-            ]
+            ],
+            "duplicates" : {
+                "dataclass" : "Storage.DuplicateStorage.DuplicateImageStorage",
+                "getter"    : "get_main_similar"
+            }
         }
     ]
 

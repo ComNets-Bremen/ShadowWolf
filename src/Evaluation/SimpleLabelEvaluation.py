@@ -53,12 +53,38 @@ class SimpleLabelEvaluationClass(BaseClass):
 
         else:
             shutil.copy(get_last_variable(ctx, "classes.txt"), simple_eval_output)
+
+            dups = self.getModuleConfig().get("duplicates", None)
+            dups_getter = None
+
+            if dups is not None:
+                _dataclass = self.getModuleConfig()["duplicates"]["dataclass"]
+                _getter    = self.getModuleConfig()["duplicates"]["getter"]
+                dups_getter = getter_factory(_dataclass, _getter, self.getSqliteFile(ctx))
+
+            images = []
             for input_source in self.getModuleConfig()["inputs"]:
+
                 input_dataclass = input_source["dataclass"]
                 input_getter    = input_source["getter"]
-                images = getter_factory(input_dataclass, input_getter, self.getSqliteFile(ctx))()
-                for image in images:
-                    logger.info(f"Handling image {image} from class {input_dataclass}")
+                for image in getter_factory(input_dataclass, input_getter, self.getSqliteFile(ctx))():
+                    images.append({
+                        "image" : image,
+                        "dataclass" : input_dataclass,
+                        "getter" : input_getter,
+                    })
+
+                if dups_getter is not None:
+                    _len_before = len(images)
+                    logger.info("Removing duplicates...")
+                    images = [image for image in images if image["image"] == dups_getter(image["image"])]
+                    logger.info(f"Removed {_len_before - len(images)} images.")
+
+                for image_dict in images:
+                    image = image_dict["image"]
+                    image_dataclass = image_dict["dataclass"]
+                    image_getter = image_dict["getter"]
+                    logger.info(f"Handling image {image} from class {image_dataclass}")
                     filename = os.path.split(image)[1]
                     name, ext = os.path.splitext(filename)
 
@@ -68,7 +94,7 @@ class SimpleLabelEvaluationClass(BaseClass):
 
                     shutil.copy(image, new_path)
                     ds.store(
-                        input_dataclass, input_getter,
+                        image_dataclass, image_getter,
                         image, new_filename)
 
             logger.critical(f"Exported images to \"{simple_eval_output}\". Upload to your SimpleEval server and wait for the votes.")
