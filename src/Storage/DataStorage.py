@@ -47,6 +47,7 @@ class ImageMetadata(Base):
     image_id: Mapped["Image"] = mapped_column(ForeignKey("image.id"))
     imageIsGray: Mapped[bool] = mapped_column(Boolean())
     exifs: Mapped[Optional[List["Exif"]]] = relationship(back_populates="image_meta", lazy="immediate")
+    iptcs: Mapped[Optional[List["Iptc"]]] = relationship(back_populates="image_meta", lazy="immediate")
 
     def __repr__(self) -> str:
         return f"ImageMetadata({self.image_id})"
@@ -65,6 +66,21 @@ class Exif(Base):
 
     def __repr__(self) -> str:
         return f"Exif dataset: {self.exif_name} -> {self.exif_value}"
+
+
+class Iptc(Base):
+    __tablename__ = "image_iptc"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    image_id: Mapped["Image"] = mapped_column(ForeignKey("image.id"))
+    image_meta_id: Mapped[int] = mapped_column(ForeignKey("image_meta.id"))
+    image_meta: Mapped["ImageMetadata"] = relationship(back_populates="iptcs    ")
+    iptc_code: Mapped[str] = mapped_column(String())
+    iptc_value: Mapped[str] = mapped_column(String())
+
+
+    def __repr__(self) -> str:
+        return f"IPTC dataset: {self.iptc_code} -> {self.iptc_value}"
 
 
 
@@ -139,13 +155,14 @@ class BasicAnalysisDataStorage(BaseStorage):
     def __init__(self, file):
         super().__init__(file)
 
-    def store(self, fullpath, imageIsGray, exifs):
+    def store(self, fullpath, imageIsGray, exifs, iptcs):
         img_instance = self.get_image(fullpath)[0]
         with Session(self.engine) as session:
             img_object = ImageMetadata(
                     image_id=img_instance.id,
                     imageIsGray = imageIsGray,
-                    exifs = [Exif(image_id=img_instance.id, exif_name=exif[0], exif_code=exif[1], exif_value=(exif[2])) for exif in exifs]
+                    exifs = [Exif(image_id=img_instance.id, exif_name=exif[0], exif_code=exif[1], exif_value=(exif[2])) for exif in exifs],
+                    iptcs = [Iptc(image_id=img_instance.id, iptc_code=iptc[0], iptc_value=iptc[1]) for iptc in iptcs],
                     )
             session.add_all([img_object,])
             session.commit()

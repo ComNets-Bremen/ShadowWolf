@@ -8,7 +8,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 from BaseClass import BaseClass
-from wolf_utils.PILhelper import getAllExif, isGray
+from wolf_utils.PILhelper import getAllExif, isGray, getAllIptcs
 from Storage.DataStorage import BasicAnalysisDataStorage
 
 
@@ -34,6 +34,7 @@ class BasicAnalysisClass(BaseClass):
                         fullpath = image,
                         imageIsGray = imageIsGray,
                         exifs = getAllExif(img),
+                        iptcs = getAllIptcs(img),
                         )
 
         ctx["steps"].append({

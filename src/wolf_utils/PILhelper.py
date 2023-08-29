@@ -27,3 +27,20 @@ def getAllExif(i):
             ret.append((PIL.ExifTags.TAGS[k], k, value))
     return ret
 
+
+## Get all iptc tags
+#
+# return all iptc tags from a given image
+def getAllIptcs(i):
+    from PIL import IptcImagePlugin
+
+    iptc = IptcImagePlugin.getiptcinfo(i)
+    ret = list()
+    if iptc:
+        for k, v in iptc.items():
+            if isinstance(v, list):
+                for val in v:
+                    ret.append((":".join(map(str,k)), val.decode()))
+            else:
+                ret.append((":".join(map(str, k)), v.decode()))
+    return ret
