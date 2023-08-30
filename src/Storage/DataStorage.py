@@ -74,7 +74,7 @@ class Iptc(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     image_id: Mapped["Image"] = mapped_column(ForeignKey("image.id"))
     image_meta_id: Mapped[int] = mapped_column(ForeignKey("image_meta.id"))
-    image_meta: Mapped["ImageMetadata"] = relationship(back_populates="iptcs    ")
+    image_meta: Mapped["ImageMetadata"] = relationship(back_populates="iptcs")
     iptc_code: Mapped[str] = mapped_column(String())
     iptc_value: Mapped[str] = mapped_column(String())
 
