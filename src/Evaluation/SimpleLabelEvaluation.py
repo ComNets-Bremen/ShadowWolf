@@ -21,6 +21,7 @@ from wolf_utils.ctx_helpers import get_last_variable
 
 from Storage.SimpleLabelStorage import SimpleLabelStorage
 
+
 ## Does nothing. Is used as kind of a template for other classes
 class SimpleLabelEvaluationClass(BaseClass):
     def __init__(self, run_num):
@@ -28,15 +29,15 @@ class SimpleLabelEvaluationClass(BaseClass):
         self.run_num = run_num
 
     def run(self, ctx):
-        logger.info(f"Identifier: {self.getStepIdentifier()}")
-        logger.info(f"Config: {self.getModuleConfig()}")
+        logger.info(f"Identifier: {self.get_step_identifier()}")
+        logger.info(f"Config: {self.get_module_config()}")
 
-        ds = SimpleLabelStorage(self.getSqliteFile(ctx))
+        ds = SimpleLabelStorage(self.get_sqlite_file(ctx))
 
-        simple_eval_output = os.path.join(self.getCurrentDataDir(ctx), "simple_eval_out")
+        simple_eval_output = os.path.join(self.get_current_data_dir(ctx), "simple_eval_out")
         Path(simple_eval_output).mkdir(parents=True, exist_ok=True)
 
-        simple_eval_input = os.path.join(self.getCurrentDataDir(ctx), "simple_eval_input")
+        simple_eval_input = os.path.join(self.get_current_data_dir(ctx), "simple_eval_input")
         Path(simple_eval_input).mkdir(parents=True, exist_ok=True)
 
         input_json_file = glob.glob(f"{simple_eval_input}/*.json")
@@ -54,24 +55,24 @@ class SimpleLabelEvaluationClass(BaseClass):
         else:
             shutil.copy(get_last_variable(ctx, "classes.txt"), simple_eval_output)
 
-            dups = self.getModuleConfig().get("duplicates", None)
+            dups = self.get_module_config().get("duplicates", None)
             dups_getter = None
 
             if dups is not None:
-                _dataclass = self.getModuleConfig()["duplicates"]["dataclass"]
-                _getter    = self.getModuleConfig()["duplicates"]["getter"]
-                dups_getter = getter_factory(_dataclass, _getter, self.getSqliteFile(ctx))
+                _dataclass = self.get_module_config()["duplicates"]["dataclass"]
+                _getter = self.get_module_config()["duplicates"]["getter"]
+                dups_getter = getter_factory(_dataclass, _getter, self.get_sqlite_file(ctx))
 
             images = []
-            for input_source in self.getModuleConfig()["inputs"]:
+            for input_source in self.get_module_config()["inputs"]:
 
                 input_dataclass = input_source["dataclass"]
-                input_getter    = input_source["getter"]
-                for image in getter_factory(input_dataclass, input_getter, self.getSqliteFile(ctx))():
+                input_getter = input_source["getter"]
+                for image in getter_factory(input_dataclass, input_getter, self.get_sqlite_file(ctx))():
                     images.append({
-                        "image" : image,
-                        "dataclass" : input_dataclass,
-                        "getter" : input_getter,
+                        "image": image,
+                        "dataclass": input_dataclass,
+                        "getter": input_getter,
                     })
 
                 if dups_getter is not None:
@@ -97,21 +98,23 @@ class SimpleLabelEvaluationClass(BaseClass):
                         image_dataclass, image_getter,
                         image, new_filename)
 
-            logger.critical(f"Exported images to \"{simple_eval_output}\". Upload to your SimpleEval server and wait for the votes.")
-            logger.critical(f"Upload the resulting json file to \"{simple_eval_input}\" and re-run the script withe the following parameters:")
+            logger.critical(
+                f"Exported images to \"{simple_eval_output}\". Upload to your SimpleEval server and wait for the votes.")
+            logger.critical(
+                f"Upload the resulting json file to \"{simple_eval_input}\" and re-run the script withe the following parameters:")
             logger.critical(f"-d {self.run_num} -o {os.path.split(ctx['output_dir'])[1]}")
             logger.critical(f"Recommended name for the project: \"{os.path.split(ctx['output_dir'])[1]}\"")
             continue_after_this_step = False
 
-
         ctx["steps"].append({
-            "identifier" : self.getStepIdentifier(),
-            "sqlite_file" : self.getSqliteFile(ctx),
-            "images_for_simpleEval" : simple_eval_output,
-            "return_data_directory" : simple_eval_input,
-            })
+            "identifier": self.get_step_identifier(),
+            "sqlite_file": self.get_sqlite_file(ctx),
+            "images_for_simpleEval": simple_eval_output,
+            "return_data_directory": simple_eval_input,
+        })
 
         return continue_after_this_step, ctx
+
 
 if __name__ == "__main__":
     pass

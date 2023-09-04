@@ -40,20 +40,20 @@
             "inputs" : [
                 {
                     "dataclass" : "Storage.DataStorage.SegmentDataStorage",
-                    "getter"    : "getImages"
+                    "getter"    : "get_images"
                 }
             ],
             "dataclass" : "Storage.DetectionStorage.DetectionStorage",
-            "getter" : "getImages"
+            "getter" : "get_images"
         },{
             "name" : "Deduplication.Imagededup.ImagededupClass",
             "inputs" : [
                 {
                     "dataclass" : "Storage.DataStorage.SegmentDataStorage",
-                    "getter"    : "getImages"
+                    "getter"    : "get_images"
                 },{
                     "dataclass" : "Storage.DetectionStorage.DetectionStorage",
-                    "getter"    : "getCutImages"
+                    "getter"    : "get_cut_images"
                 }
             ]
         },{
@@ -61,10 +61,10 @@
             "inputs" : [
                 {
                     "dataclass" :  "Storage.DetectionStorage.DetectionStorage",
-                    "getter"    :  "getCutImages"
+                    "getter"    :  "get_cut_images"
                 },{
                     "dataclass" : "Storage.DataStorage.SegmentDataStorage",
-                    "getter"    : "getImages"
+                    "getter"    : "get_images"
                 }
             ],
             "duplicates" : {

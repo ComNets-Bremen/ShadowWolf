@@ -28,7 +28,7 @@ class BaseClass:
         with open(config, "r") as f:
             self.config = json.load(f)
 
-    def getNewContext(self, output=None, cont=0):
+    def get_new_context(self, output=None, cont=0):
         if output is None:
             output_dir = os.path.join(os.getcwd(), "output", slugify(datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + "_" + str(self.config_filename)))
         else:
@@ -55,12 +55,12 @@ class BaseClass:
         ctx["logfile"].append(logfile)
         return ctx
 
-    def getSqliteFile(self, ctx, name="metadata.sqlite"):
+    def get_sqlite_file(self, ctx, name="metadata.sqlite"):
         return "sqlite:///" + os.path.abspath(os.path.join(ctx["output_dir"], name))
 
     def run(self, ctx=None, cont=0):
         if ctx is None:
-            ctx = self.getNewContext()
+            ctx = self.get_new_context()
         for i, m in enumerate(self.config["modules"][cont:], start=cont):
             cont, ctx = getter_factory(m["name"], "run", i)(ctx)
 
@@ -83,21 +83,21 @@ class BaseClass:
         pp = pprint.PrettyPrinter(indent=4)
         logger.info(f"Final context:\n {pp.pformat(ctx)}\n")
 
-    def getMainConfig(self):
+    def get_main_config(self):
         return self.config["main_config"]
 
 
-    def getLastConfig(self, key):
+    def get_last_config(self, key):
         for i in range(self.run_num, 0, -1):
             if key in self.config["modules"][i]:
                 return self.config["modules"][i][key]
-        return self.getMainConfig()[key]
+        return self.get_main_config()[key]
 
     # Get the images from the last step
-    def getInputData(self):
-        return self.getLastConfig("image_dir")
+    def get_input_data(self):
+        return self.get_last_config("image_dir")
 
-    def getModuleConfig(self):
+    def get_module_config(self):
         if self.run_num is None:
             # Get the config by the module name. Might be problematic if one
             # Module is called multiple times with different parameters
@@ -114,11 +114,11 @@ class BaseClass:
         logger.info("No config found")
         return dict()
 
-    def getStepIdentifier(self):
+    def get_step_identifier(self):
         return f"{str(self.run_num)}_{self.__class__.__name__}"
 
-    def getCurrentDataDir(self, ctx):
-        p = os.path.join(ctx["output_dir"], self.getStepIdentifier())
+    def get_current_data_dir(self, ctx):
+        p = os.path.join(ctx["output_dir"], self.get_step_identifier())
         Path(p).mkdir(parents=True, exist_ok=True)
         return p
 
@@ -133,5 +133,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     bc = BaseClass(config=args.config)
-    ctx = bc.getNewContext(output=args.output, cont=args.cont)
+    ctx = bc.get_new_context(output=args.output, cont=args.cont)
     bc.run(ctx, cont=args.cont)
+    logger.info(f"Done. Stored logfile at {logfile}")

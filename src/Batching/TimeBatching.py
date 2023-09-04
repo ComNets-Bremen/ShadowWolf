@@ -3,10 +3,12 @@
 import datetime
 
 import logging
+
 logger = logging.getLogger(__name__)
 
 from BaseClass import BaseClass
 from Storage.DataStorage import BatchingDataStorage, BasicAnalysisDataStorage
+
 
 ## Create batches based on the image timestamp
 class TimeBatchingClass(BaseClass):
@@ -15,25 +17,25 @@ class TimeBatchingClass(BaseClass):
         self.run_num = run_num
 
     def run(self, ctx):
-        logger.info(f"Identifier: {self.getStepIdentifier()}")
-        logger.info(f"Config: {self.getModuleConfig()}")
+        logger.info(f"Identifier: {self.get_step_identifier()}")
+        logger.info(f"Config: {self.get_module_config()}")
 
-        ds = BatchingDataStorage(self.getSqliteFile(ctx))
-        analysis_storage = BasicAnalysisDataStorage(self.getSqliteFile(ctx))
+        ds = BatchingDataStorage(self.get_sqlite_file(ctx))
+        analysis_storage = BasicAnalysisDataStorage(self.get_sqlite_file(ctx))
 
         image_db = []
 
         for image in ds.get_all_images():
-            meta, exif = analysis_storage.getByInstance(image[0])
+            meta, exif = analysis_storage.get_by_instance(image[0])
             for e in exif:
-                if e.exif_name == self.getModuleConfig()["exif_time_source"]:
+                if e.exif_name == self.get_module_config()["exif_time_source"]:
                     dt = datetime.datetime.strptime(e.exif_value, "%Y:%m:%d %H:%M:%S")
                     image_db.append({
-                        "image" : image[0],
-                        "dt"    : dt
-                        })
+                        "image": image[0],
+                        "dt": dt
+                    })
                     continue
-        image_db.sort(key=lambda x:x["dt"])
+        image_db.sort(key=lambda x: x["dt"])
 
         imgdb_batches = []
         current_subbatch = []
@@ -43,7 +45,7 @@ class TimeBatchingClass(BaseClass):
                 lastframe = img
                 current_subbatch.append(img["image"])
                 continue
-            if (img["dt"] - lastframe["dt"]).total_seconds() > self.getModuleConfig()["max_timediff_s"]:
+            if (img["dt"] - lastframe["dt"]).total_seconds() > self.get_module_config()["max_timediff_s"]:
                 imgdb_batches.append(current_subbatch)
                 current_subbatch = []
             current_subbatch.append(img["image"])
@@ -56,14 +58,15 @@ class TimeBatchingClass(BaseClass):
             ds.store(batch, __name__)
 
         ctx["steps"].append({
-                "identifier" : self.getStepIdentifier(),
-                "sqlite_file" : self.getSqliteFile(ctx),
-                "num_batches" : len(imgdb_batches),
-                "batch_sizes" : [len(x) for x in imgdb_batches],
-                "num_images"  : sum([len(x) for x in imgdb_batches]),
-            })
+            "identifier": self.get_step_identifier(),
+            "sqlite_file": self.get_sqlite_file(ctx),
+            "num_batches": len(imgdb_batches),
+            "batch_sizes": [len(x) for x in imgdb_batches],
+            "num_images": sum([len(x) for x in imgdb_batches]),
+        })
 
         return True, ctx
+
 
 if __name__ == "__main__":
     pass

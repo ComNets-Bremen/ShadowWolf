@@ -8,7 +8,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 from BaseClass import BaseClass
-from wolf_utils.PILhelper import getAllExif, isGray, getAllIptcs
+from wolf_utils.PILhelper import get_all_exif, is_gray, get_all_iptcs
 from Storage.DataStorage import BasicAnalysisDataStorage
 
 
@@ -20,27 +20,27 @@ class BasicAnalysisClass(BaseClass):
         self.run_num = run_num
 
     def run(self, ctx):
-        logger.info(f"Identifier: {self.getStepIdentifier()}")
-        logger.info(f"Config: {self.getModuleConfig()}")
-        images = glob.glob(self.getInputData() + "/*." + self.getMainConfig()["image_filetype"])
+        logger.info(f"Identifier: {self.get_step_identifier()}")
+        logger.info(f"Config: {self.get_module_config()}")
+        images = glob.glob(self.get_input_data() + "/*." + self.get_main_config()["image_filetype"])
 
-        ds = BasicAnalysisDataStorage(self.getSqliteFile(ctx))
+        ds = BasicAnalysisDataStorage(self.get_sqlite_file(ctx))
 
         for image in images:
             logger.info(f"Processing image {image}")
             with PIL.Image.open(image) as img:
-                imageIsGray = isGray(img)
+                imageIsGray = is_gray(img)
                 ds.store(
                         fullpath = image,
                         imageIsGray = imageIsGray,
-                        exifs = getAllExif(img),
-                        iptcs = getAllIptcs(img),
+                        exifs = get_all_exif(img),
+                        iptcs = get_all_iptcs(img),
                         )
 
         ctx["steps"].append({
-                "identifier" : self.getStepIdentifier(),
+                "identifier" : self.get_step_identifier(),
                 "num_images" : len(images),
-                "sqlite_file" : self.getSqliteFile(ctx)
+                "sqlite_file" : self.get_sqlite_file(ctx)
                 })
 
         return True, ctx

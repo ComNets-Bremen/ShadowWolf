@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import logging
+
 logger = logging.getLogger(__name__)
 
 from sqlalchemy import Column
@@ -19,6 +20,7 @@ from sqlalchemy import select
 class Base(DeclarativeBase):
     pass
 
+
 image_to_image = Table(
     "image_to_image",
     Base.metadata,
@@ -26,24 +28,24 @@ image_to_image = Table(
     Column("right_image_id", Integer, ForeignKey("duplicate_image.id"), primary_key=True),
 )
 
+
 class DuplicateImage(Base):
     __tablename__ = "duplicate_image"
     id = mapped_column(Integer, primary_key=True)
     fullpath = mapped_column(String())
     right_images = relationship(
-            "DuplicateImage",
-            secondary=image_to_image,
-            primaryjoin=id == image_to_image.c.left_image_id,
-            secondaryjoin=id == image_to_image.c.right_image_id,
-            backref="left_images",
-            )
-
+        "DuplicateImage",
+        secondary=image_to_image,
+        primaryjoin=id == image_to_image.c.left_image_id,
+        secondaryjoin=id == image_to_image.c.right_image_id,
+        backref="left_images",
+    )
 
     def __repr__(self):
         return f"Image:  {self.fullpath}"
 
-## End Table definitions
 
+## End Table definitions
 
 
 class DuplicateImageStorage:
@@ -57,29 +59,33 @@ class DuplicateImageStorage:
             img = session.execute(select(DuplicateImage).where(DuplicateImage.fullpath == fullpath)).one_or_none()
             if img is not None:
                 return img
-            else: # Image does not exist in DB
+            else:  # Image does not exist in DB
 
                 session.add(
-                        DuplicateImage(
-                              fullpath=fullpath,
-                              )
-                        )
+                    DuplicateImage(
+                        fullpath=fullpath,
+                    )
+                )
                 session.commit()
                 return session.execute(select(DuplicateImage).where(DuplicateImage.fullpath == fullpath)).one_or_none()
 
     def add_duplicate(self, original_image, duplicate):
         with Session(self.engine) as session:
-            orig_image = session.execute(select(DuplicateImage).where(DuplicateImage.fullpath == original_image)).one_or_none()
+            orig_image = session.execute(
+                select(DuplicateImage).where(DuplicateImage.fullpath == original_image)).one_or_none()
             if orig_image is None:
                 session.add(DuplicateImage(fullpath=original_image))
                 session.commit()
-                orig_image = session.execute(select(DuplicateImage).where(DuplicateImage.fullpath == original_image)).one_or_none()
+                orig_image = session.execute(
+                    select(DuplicateImage).where(DuplicateImage.fullpath == original_image)).one_or_none()
 
-            dup_image = session.execute(select(DuplicateImage).where(DuplicateImage.fullpath == duplicate)).one_or_none()
+            dup_image = session.execute(
+                select(DuplicateImage).where(DuplicateImage.fullpath == duplicate)).one_or_none()
             if dup_image is None:
                 session.add(DuplicateImage(fullpath=duplicate))
                 session.commit()
-                dup_image = session.execute(select(DuplicateImage).where(DuplicateImage.fullpath == duplicate)).one_or_none()
+                dup_image = session.execute(
+                    select(DuplicateImage).where(DuplicateImage.fullpath == duplicate)).one_or_none()
 
             orig_image = orig_image[0]
             dup_image = dup_image[0]
@@ -90,7 +96,7 @@ class DuplicateImageStorage:
 
     def get_similar(self, fullname):
         with Session(self.engine) as session:
-            img = session.execute(select(DuplicateImage).where(DuplicateImage.fullpath==fullname)).one_or_none()
+            img = session.execute(select(DuplicateImage).where(DuplicateImage.fullpath == fullname)).one_or_none()
             if img is None:
                 return None
             similar_images = [i.fullpath for i in img[0].right_images]
@@ -111,11 +117,11 @@ class DuplicateImageStorage:
 
 
 if __name__ == "__main__":
-    dup_storage = DuplicateImageStorage("sqlite:///test.sqlite", "TESTCLASS")
+    dup_storage = DuplicateImageStorage("sqlite:///test.sqlite")
     file1 = "/home/test/testme.jpg"
     file2 = "/home/test/testm2.jpg"
     ref1 = dup_storage.get_image(file1)
-    #ref2 = dup_storage.get_image(file2)
+    # ref2 = dup_storage.get_image(file2)
     dup_storage.add_duplicate(file1, file2)
     dup_storage.add_duplicate(file1, file2)
     print(file1, dup_storage.get_similar(file1))

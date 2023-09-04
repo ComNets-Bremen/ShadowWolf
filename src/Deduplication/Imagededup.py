@@ -15,13 +15,13 @@ class ImagededupClass(BaseClass):
         self.run_num = run_num
 
     def run(self, ctx):
-        logger.info(f"Identifier: {self.getStepIdentifier()}")
-        logger.info(f"Config: {self.getModuleConfig()}")
+        logger.info(f"Identifier: {self.get_step_identifier()}")
+        logger.info(f"Config: {self.get_module_config()}")
 
         input_images = []
-        for input_cls in self.getModuleConfig()["inputs"]:
+        for input_cls in self.get_module_config()["inputs"]:
             input_dataclass = input_cls["dataclass"]
-            getter = getter_factory(input_dataclass, input_cls["getter"], self.getSqliteFile(ctx))
+            getter = getter_factory(input_dataclass, input_cls["getter"], self.get_sqlite_file(ctx))
             input_images.extend(getter())
 
         # Unify list, remove duplicates
@@ -37,7 +37,7 @@ class ImagededupClass(BaseClass):
 
         duplicates = hasher.find_duplicates(encoding_map=encodings)
 
-        duplicat_storage = DuplicateImageStorage(self.getSqliteFile(ctx))
+        duplicat_storage = DuplicateImageStorage(self.get_sqlite_file(ctx))
 
         for dup in duplicates:
             if len(duplicates[dup]) > 0:
@@ -48,8 +48,8 @@ class ImagededupClass(BaseClass):
 
 
         ctx["steps"].append({
-                "identifier" : self.getStepIdentifier(),
-                "sqlite_file" : self.getSqliteFile(ctx),
+                "identifier" : self.get_step_identifier(),
+                "sqlite_file" : self.get_sqlite_file(ctx),
             })
 
         return True, ctx

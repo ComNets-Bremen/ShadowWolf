@@ -28,11 +28,11 @@ class YoloDetectionClass(BaseClass):
         self.run_num = run_num
 
     def run(self, ctx):
-        logger.info(f"Identifier: {self.getStepIdentifier()}")
-        logger.info(f"Config: {self.getModuleConfig()}")
+        logger.info(f"Identifier: {self.get_step_identifier()}")
+        logger.info(f"Config: {self.get_module_config()}")
 
         output_dirs = dict()
-        output_dirs["base_path"] = self.getCurrentDataDir(ctx)
+        output_dirs["base_path"] = self.get_current_data_dir(ctx)
         output_dirs["labelled_images"] = os.path.join(output_dirs["base_path"], "labelled_images")
         output_dirs["labels_images"] = os.path.join(output_dirs["base_path"], "labels_images")
         output_dirs["cut_to_detection"] = os.path.join(output_dirs["base_path"], "cut_to_detection")
@@ -40,7 +40,7 @@ class YoloDetectionClass(BaseClass):
         for d in output_dirs:
             Path(output_dirs[d]).mkdir(parents=True, exist_ok=True)
 
-        inputs = self.getModuleConfig()["inputs"]
+        inputs = self.get_module_config()["inputs"]
         if len(inputs) != 1:
             raise ValueError(
                 f"Wrong number of inputs. This module is currently working with excactly one input file. You gave {len(inputs)}."
@@ -48,28 +48,28 @@ class YoloDetectionClass(BaseClass):
 
         input_dataclass = inputs[0]["dataclass"]
         input_getter    = inputs[0]["getter"]
-        input_images = getter_factory(input_dataclass, input_getter, self.getSqliteFile(ctx))()
+        input_images = getter_factory(input_dataclass, input_getter, self.get_sqlite_file(ctx))()
 
         classes_path = os.path.join(output_dirs["labels_images"], "classes.txt")
         model_dir = os.path.dirname(os.path.realpath(__file__))
-        model_file = os.path.join(model_dir, self.getModuleConfig()["detect_model"])
+        model_file = os.path.join(model_dir, self.get_module_config()["detect_model"])
         logger.info(f"Using model {model_file}. Loading...")
 
         model = torch.hub.load(
-                self.getModuleConfig()["detect_repository"],
+                self.get_module_config()["detect_repository"],
                 "custom",
                 model_file,
-                force_reload = self.getModuleConfig().get("detect_force_reload", False),
+                force_reload = self.get_module_config().get("detect_force_reload", False),
                 )
 
-        detection_storage = DetectionStorage(self.getSqliteFile(ctx), input_dataclass, input_getter)
+        detection_storage = DetectionStorage(self.get_sqlite_file(ctx), input_dataclass, input_getter)
 
         total_images = len(input_images)
         handled_images = 0
         start_time_detection = time.time()
 
         logger.info("Starting detection...")
-        for i in batch(input_images, self.getModuleConfig().get("detect_batchsize", 4)):
+        for i in batch(input_images, self.get_module_config().get("detect_batchsize", 4)):
             results = model(i)
             classes = results.names
             if not os.path.isfile(classes_path):
@@ -127,8 +127,8 @@ class YoloDetectionClass(BaseClass):
         for key in output_dirs:
             output_dict[key] = output_dirs[key]
 
-        output_dict["identifier"] = self.getStepIdentifier()
-        output_dict["sqlite_file"] = self.getSqliteFile(ctx)
+        output_dict["identifier"] = self.get_step_identifier()
+        output_dict["sqlite_file"] = self.get_sqlite_file(ctx)
         output_dict["classes.txt"] = classes_path
         ctx["steps"].append(output_dict)
         return True, ctx

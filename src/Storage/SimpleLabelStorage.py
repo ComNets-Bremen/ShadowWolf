@@ -53,7 +53,7 @@ class SimpleLabelStorage:
             session.add(detection)
             session.commit()
 
-    def getImages(self):
+    def get_images(self):
         ret = []
         with Session(self.engine) as session:
             for i in session.execute(select(SimpleEvalSplit)).all():

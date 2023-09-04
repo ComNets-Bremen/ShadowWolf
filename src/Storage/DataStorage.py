@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import logging
+
 logger = logging.getLogger(__name__)
 
 import os
@@ -18,9 +19,11 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 from sqlalchemy import select
 
+
 ## Table definitions
 class Base(DeclarativeBase):
     pass
+
 
 class Image(Base):
     __tablename__ = "image"
@@ -28,7 +31,7 @@ class Image(Base):
     name: Mapped[str] = mapped_column(String())
     fullpath: Mapped[str] = mapped_column(String())
 
-    width: Mapped[Optional[int]]  = mapped_column(Integer())
+    width: Mapped[Optional[int]] = mapped_column(Integer())
     height: Mapped[Optional[int]] = mapped_column(Integer())
     colors: Mapped[Optional[int]] = mapped_column(Integer())
 
@@ -57,8 +60,8 @@ class Exif(Base):
     __tablename__ = "image_exif"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    image_id : Mapped["Image"] = mapped_column(ForeignKey("image.id"))
-    image_meta_id : Mapped[int] = mapped_column(ForeignKey("image_meta.id"))
+    image_id: Mapped["Image"] = mapped_column(ForeignKey("image.id"))
+    image_meta_id: Mapped[int] = mapped_column(ForeignKey("image_meta.id"))
     image_meta: Mapped["ImageMetadata"] = relationship(back_populates="exifs")
     exif_code: Mapped[int] = mapped_column(Integer())
     exif_name: Mapped[str] = mapped_column(String())
@@ -78,17 +81,15 @@ class Iptc(Base):
     iptc_code: Mapped[str] = mapped_column(String())
     iptc_value: Mapped[str] = mapped_column(String())
 
-
     def __repr__(self) -> str:
         return f"IPTC dataset: {self.iptc_code} -> {self.iptc_value}"
-
 
 
 class ImageBatch(Base):
     __tablename__ = "image_batch"
     id: Mapped[int] = mapped_column(primary_key=True)
     images: Mapped[List["Image"]] = relationship(back_populates="batch", cascade="all, delete-orphan", lazy="immediate")
-    creator: Mapped[str|None] = mapped_column(String())
+    creator: Mapped[str | None] = mapped_column(String())
 
     def __repr__(self):
         return f"Batch with {len(self.images)} images"
@@ -112,8 +113,8 @@ class Segment(Base):
     def __repr__(self):
         return f"Segment of image {self.base_image}"
 
-## End Table definitions
 
+## End Table definitions
 
 
 class BaseStorage:
@@ -127,7 +128,7 @@ class BaseStorage:
             img = session.execute(select(Image).where(Image.fullpath == fullpath)).one_or_none()
             if img is not None:
                 return img
-            else: # Image does not exist in DB
+            else:  # Image does not exist in DB
                 im = cv2.imread(fullpath)
                 if im is None:
                     height, width, colors = None, None, None
@@ -135,20 +136,19 @@ class BaseStorage:
                     height, width, colors = im.shape
 
                 session.add(
-                        Image(name=os.path.split(fullpath)[1],
-                              fullpath=fullpath,
-                              height=height,
-                              width=width,
-                              colors=colors
-                              )
-                        )
+                    Image(name=os.path.split(fullpath)[1],
+                          fullpath=fullpath,
+                          height=height,
+                          width=width,
+                          colors=colors
+                          )
+                )
                 session.commit()
                 return session.execute(select(Image).where(Image.fullpath == fullpath)).one_or_none()
 
     def get_all_images(self):
         with Session(self.engine) as session:
             return session.execute(select(Image)).all()
-
 
 
 class BasicAnalysisDataStorage(BaseStorage):
@@ -159,15 +159,16 @@ class BasicAnalysisDataStorage(BaseStorage):
         img_instance = self.get_image(fullpath)[0]
         with Session(self.engine) as session:
             img_object = ImageMetadata(
-                    image_id=img_instance.id,
-                    imageIsGray = imageIsGray,
-                    exifs = [Exif(image_id=img_instance.id, exif_name=exif[0], exif_code=exif[1], exif_value=(exif[2])) for exif in exifs],
-                    iptcs = [Iptc(image_id=img_instance.id, iptc_code=iptc[0], iptc_value=iptc[1]) for iptc in iptcs],
-                    )
-            session.add_all([img_object,])
+                image_id=img_instance.id,
+                imageIsGray=imageIsGray,
+                exifs=[Exif(image_id=img_instance.id, exif_name=exif[0], exif_code=exif[1], exif_value=(exif[2])) for
+                       exif in exifs],
+                iptcs=[Iptc(image_id=img_instance.id, iptc_code=iptc[0], iptc_value=iptc[1]) for iptc in iptcs],
+            )
+            session.add_all([img_object, ])
             session.commit()
 
-    def getByInstance(self, img_instance):
+    def get_by_instance(self, img_instance):
         with Session(self.engine) as session:
             meta = session.execute(select(ImageMetadata).where(ImageMetadata.image_id == img_instance.id))
             exif = session.execute(select(Exif).where(Exif.image_id == img_instance.id))
@@ -180,11 +181,11 @@ class BatchingDataStorage(BaseStorage):
 
     def store(self, instances, creator=None):
         with Session(self.engine) as session:
-            bds = ImageBatch(images = instances, creator=creator)
+            bds = ImageBatch(images=instances, creator=creator)
             session.add(bds)
             session.commit()
 
-    def getBatchFromImage(self, image_instance):
+    def get_batch_from_image(self, image_instance):
         with Session(self.engine) as session:
             image = session.execute(select(Image).where(Image.id == image_instance.id)).one_or_none()
             if image is None:
@@ -193,7 +194,7 @@ class BatchingDataStorage(BaseStorage):
             print(image.batch.images)
             return image.batch
 
-    def getBatches(self):
+    def get_batches(self):
         with Session(self.engine) as session:
             return session.execute(select(ImageBatch)).all()
 
@@ -218,25 +219,32 @@ class SegmentDataStorage(BaseStorage):
                 x_max=x_max,
                 output_width=output_width,
                 output_height=output_height,
-                )
+            )
             session.add(seg)
             session.commit()
 
-    def getSegments(self):
+    def get_segments(self, img=None):
         with Session(self.engine) as session:
-            return session.execute(select(Segment)).all()
+            if img is None:
+                q = session.execute(select(Segment)).all()
+            else:
+                print(img)
+                q = session.execute(select(Segment).filter_by(segment_fullpath=img)).all()
+            return q
 
-    def getImages(self):
-        return [i[0].segment_fullpath for i in self.getSegments()]
+    def get_images(self, img=None):
+        if img is None:
+            return [i[0].segment_fullpath for i in self.get_segments()]
+        else:
+            return self.get_segments(img)
+
 
 if __name__ == "__main__":
     ds = SegmentDataStorage("sqlite:///test.sqlite")
     img_instance1 = ds.get_image("/test/files/testfile1.jpg")[0]
     img_instance2 = ds.get_image("/test/files/testfile2.jpg")[0]
-    ds.store(img_instance1, "ABC", 1,2,3,4,5,6)
+    ds.store(img_instance1, "ABC", 1, 2, 3, 4, 5, 6)
 
     img_instance1 = ds.get_image("/test/files/testfile1.jpg")[0]
 
     print(img_instance1.segments)
-
-
