@@ -9,6 +9,7 @@ from BaseClass import BaseClass
 
 from Storage.DuplicateStorage import DuplicateImageStorage
 
+
 class ImagededupClass(BaseClass):
     def __init__(self, run_num):
         super().__init__()
@@ -27,7 +28,7 @@ class ImagededupClass(BaseClass):
         # Unify list, remove duplicates
         input_images = list(dict.fromkeys(input_images))
 
-        hasher = PHash() # TODO: Make configurable
+        hasher = PHash()  # TODO: Make configurable
 
         encodings = dict()
 
@@ -45,14 +46,13 @@ class ImagededupClass(BaseClass):
                     duplicat_storage.add_duplicate(dup, related_dup)
                 logger.info(f"similar images for {dup}: {duplicat_storage.get_similar(dup)}")
 
-
-
         ctx["steps"].append({
-                "identifier" : self.get_step_identifier(),
-                "sqlite_file" : self.get_sqlite_file(ctx),
-            })
+            "identifier": self.get_step_identifier(),
+            "sqlite_file": self.get_sqlite_file(ctx),
+        })
 
         return True, ctx
+
 
 if __name__ == "__main__":
     pass
