@@ -2,6 +2,8 @@ import importlib
 import unicodedata
 import re
 
+import cv2
+
 import logging
 
 logger = logging.getLogger(__file__)
@@ -83,3 +85,38 @@ def delta_time_format(seconds):
         ret.append(f"{left} second")
 
     return " ".join(ret)
+
+
+def draw_text(img, text,
+          pos=(0, 0),
+          font=cv2.FONT_HERSHEY_PLAIN,
+          font_scale=1,
+          font_thickness=1,
+          text_color=(0, 0, 0),
+          text_color_bg=(255, 255, 255)
+          ):
+    """
+    Draws a text with a background to a given position
+
+    Parameters
+    ----------
+    img             The image to paint on
+    text            The text
+    pos             Position of the text
+    font            The font (defaults to FONT_HERSHEY_PLAIN)
+    font_scale      The scale of the font. Defaults to 1
+    font_thickness  The thickness of the font. Defaults to 1
+    text_color      The text color. Default: Black (0, 0, 0)
+    text_color_bg   The background color. Default: White (255, 255. 255)
+
+    Returns         The text size
+    -------
+    """
+
+    x, y = pos
+    text_size, _ = cv2.getTextSize(text, font, font_scale, font_thickness)
+    text_w, text_h = text_size
+    cv2.rectangle(img, pos, (x + text_w, y + text_h), text_color_bg, -1)
+    cv2.putText(img, text, (x, y + text_h + font_scale - 1), font, font_scale, text_color, font_thickness)
+
+    return text_size
