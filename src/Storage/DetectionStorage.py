@@ -47,6 +47,10 @@ class DetectionStorage:
         self.input_dataclass = input_dataclass
         self.input_getter = input_getter
 
+    @staticmethod
+    def get_class():
+        return Detection
+
     def store(self, fullpath, cut_image, detection_class, detection_class_numeric, confidence, x_min, y_min, x_max,
               y_max):
         with Session(self.engine) as session:
@@ -68,26 +72,12 @@ class DetectionStorage:
             session.commit()
 
     def get_images(self, img=None):
-        ret = []
         with Session(self.engine) as session:
             if img is None:
-                q = session.execute(select(Detection)).all()
+                q = session.execute(select(Detection)).scalars().all()
             else:
-                q = session.execute(select(Detection).filter_by(cut_image=img)).all()
-            for i in q:
-                ret.append({
-                    "image_fullpath": i[0].image_fullpath,
-                    "cut_image": i[0].cut_image,
-                    "confidence": i[0].confidence,
-                    "detection_class": i[0].detection_class,
-                    "detection_class_numeric": i[0].detection_class_numeric,
-                    "x_min": i[0].x_min,
-                    "y_min": i[0].y_min,
-                    "x_max": i[0].x_max,
-                    "y_max": i[0].y_max
-                })
-
-        return ret
+                q = session.execute(select(Detection).filter_by(cut_image=img)).scalars().all()
+        return q
 
     def get_cut_images(self, img=None):
         if img is None:

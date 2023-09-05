@@ -41,6 +41,10 @@ class SimpleLabelStorage:
         self.engine = create_engine(self.file)
         Base.metadata.create_all(self.engine)
 
+    @staticmethod
+    def get_class():
+        return SimpleEvalSplit
+
     def store(self, source_class, source_getter, src_file, dest_file):
         with Session(self.engine) as session:
             detection = SimpleEvalSplit(

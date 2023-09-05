@@ -113,7 +113,6 @@ class Segment(Base):
     def __repr__(self):
         return f"Segment of image {self.base_image}"
 
-
 ## End Table definitions
 
 
@@ -150,10 +149,22 @@ class BaseStorage:
         with Session(self.engine) as session:
             return session.execute(select(Image)).all()
 
+    def get_image_by_id(self, image_id):
+        with Session(self.engine) as session:
+            return session.execute(select(Image).where(Image.id == image_id)).scalars().one_or_none()
+
+    def get_image_by_fullpath(self, fullpath):
+        with Session(self.engine) as session:
+            return session.execute(select(Image).where(Image.fullpath == fullpath)).scalars().one_or_none()
+
 
 class BasicAnalysisDataStorage(BaseStorage):
     def __init__(self, file):
         super().__init__(file)
+
+    @staticmethod
+    def get_class():
+        return ImageMetadata
 
     def store(self, fullpath, imageIsGray, exifs, iptcs):
         img_instance = self.get_image(fullpath)[0]
@@ -179,6 +190,10 @@ class BatchingDataStorage(BaseStorage):
     def __init__(self, file):
         super().__init__(file)
 
+    @staticmethod
+    def get_class():
+        return ImageBatch
+
     def store(self, instances, creator=None):
         with Session(self.engine) as session:
             bds = ImageBatch(images=instances, creator=creator)
@@ -203,6 +218,11 @@ class SegmentDataStorage(BaseStorage):
     def __init__(self, file):
         super().__init__(file)
 
+    @staticmethod
+    def get_class():
+        return Segment
+
+
     def store(self, image, segment_fullpath, y_min, y_max, x_min, x_max, output_width, output_height, creator=None):
         with Session(self.engine) as session:
             # Make sure we have an instance of the image db representation
@@ -224,19 +244,27 @@ class SegmentDataStorage(BaseStorage):
             session.commit()
 
     def get_segments(self, img=None):
+        """
+        Get the segments for a given image
+
+        Parameters
+        ----------
+        img  The original image
+
+        Returns the segments
+        -------
+
+        """
         with Session(self.engine) as session:
             if img is None:
-                q = session.execute(select(Segment)).all()
+                q = session.execute(select(Segment.segment_fullpath)).scalars().all()
             else:
-                print(img)
-                q = session.execute(select(Segment).filter_by(segment_fullpath=img)).all()
+                q = session.execute(select(Segment).filter_by(segment_fullpath=img)).scalars().all()
             return q
 
     def get_images(self, img=None):
-        if img is None:
-            return [i[0].segment_fullpath for i in self.get_segments()]
-        else:
-            return self.get_segments(img)
+        logger.warning(f"Deprecation warning: Please use get_segments instead of  get_images for the class {__name__}")
+        return self.get_segments(img)
 
 
 if __name__ == "__main__":

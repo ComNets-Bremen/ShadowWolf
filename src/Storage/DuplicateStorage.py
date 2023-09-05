@@ -54,6 +54,10 @@ class DuplicateImageStorage:
         self.engine = create_engine(self.file)
         Base.metadata.create_all(self.engine)
 
+    @staticmethod
+    def get_class():
+        return DuplicateImage
+
     def get_image(self, fullpath):
         with Session(self.engine) as session:
             img = session.execute(select(DuplicateImage).where(DuplicateImage.fullpath == fullpath)).one_or_none()
@@ -101,7 +105,7 @@ class DuplicateImageStorage:
                 return None
             similar_images = [i.fullpath for i in img[0].right_images]
             similar_images.extend([i.fullpath for i in img[0].left_images])
-            return similar_images
+            return list(set(similar_images))
 
     def get_main_similar(self, fullname):
         similar_images = self.get_similar(fullname)
