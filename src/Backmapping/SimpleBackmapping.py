@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
+import json
 import logging
 import os
 from pathlib import Path
 
+from Storage.BackmappingStorage import BackmappingStorage
 from wolf_utils.misc import getter_factory, draw_text
 
 logger = logging.getLogger(__name__)
@@ -57,6 +59,8 @@ class BackmappingClass(BaseClass):
                 if isinstance(src_images[0], SegmentDataStorage.get_class()):
                     logger.info("SEGMENT")
 
+                    store_votings = {SegmentDataStorage.get_class().__name__ : json.loads(image["votings"])}
+
                     db_image = bs.get_image_by_id(src_images[0].base_image)
                     all_votings.append({
                         "orig_image_name": db_image.name,
@@ -65,7 +69,7 @@ class BackmappingClass(BaseClass):
                         "x_min": src_images[0].x_min,
                         "y_max": src_images[0].y_max,
                         "y_min": src_images[0].y_min,
-                        "votings": image["votings"],
+                        "votings": store_votings,
                         "source": SegmentDataStorage.get_class().__name__,
                     })
 
@@ -80,7 +84,7 @@ class BackmappingClass(BaseClass):
                             "x_min": src_images.x_min,
                             "y_max": src_images.y_max,
                             "y_min": src_images.y_min,
-                            "votings": image["votings"],
+                            "votings": store_votings,
                             "source": SegmentDataStorage.get_class().__name__,
                         })
 
@@ -111,7 +115,11 @@ class BackmappingClass(BaseClass):
                     y_max = seg_y_min + det_y_max
 
                     orig_image = bs.get_image_by_id(src_segment[0].base_image)
-                    votings = {str(src_images[0].detection_class_numeric): src_images[0].confidence}
+
+                    store_votings = {
+                        SegmentDataStorage.get_class().__name__ : json.loads(image["votings"]),
+                        DetectionStorage.get_class().__name__   : {str(src_images[0].detection_class_numeric): src_images[0].confidence}
+                    }
 
                     all_votings.append({
                         "orig_image_name": orig_image.name,
@@ -120,7 +128,7 @@ class BackmappingClass(BaseClass):
                         "x_max": x_max,
                         "y_min": y_min,
                         "y_max": y_max,
-                        "votings": votings,
+                        "votings": store_votings,
                         "source": DetectionStorage.get_class().__name__,
                     })
 
@@ -146,6 +154,10 @@ class BackmappingClass(BaseClass):
 
                         orig_image = bs.get_image_by_id(src_segment.base_image)
                         votings = {str(src_images.detection_class_numeric): src_images.confidence}
+                        store_votings = {
+                            SegmentDataStorage.get_class().__name__: json.loads(image["votings"]),
+                            DetectionStorage.get_class().__name__  : {str(src_images.detection_class_numeric): src_images.confidence}
+                        }
 
                         all_votings.append({
                             "orig_image_name": orig_image.name,
@@ -154,7 +166,7 @@ class BackmappingClass(BaseClass):
                             "x_max": x_max,
                             "y_min": y_min,
                             "y_max": y_max,
-                            "votings": votings,
+                            "votings": store_votings,
                             "source": DetectionStorage.get_class().__name__,
                         })
 
@@ -163,31 +175,43 @@ class BackmappingClass(BaseClass):
 
         logger.info(f"We have {len(all_votings)} votes. Removing duplicate entries.")
         all_votings = [dict(t) for t in [tuple(d.items()) for d in all_votings]]
-        logger.info(f"Now, we have {len(all_votings)}. Creating examples boxes for all classes.")
+        logger.info(f"Now, we have {len(all_votings)}. Storing everything to the database...")
+
+        backmapping_storage = BackmappingStorage(self.get_sqlite_file(ctx))
+        for voting in all_votings:
+            backmapping_storage.store(
+                image_fullpath=voting["orig_image_fullpath"],
+                image_name=voting["orig_image_name"],
+                source=voting["source"],
+                votings=voting["votings"],
+                x_min=voting["x_min"],
+                x_max=voting["x_max"],
+                y_min=voting["y_min"],
+                y_max=voting["y_max"]
+            )
+
+        logger.info("Storing boxes in images...")
 
         output_dir = os.path.join(self.get_current_data_dir(ctx), "boxes")
         Path(output_dir).mkdir(parents=True, exist_ok=True)
 
-        for orig_img in set([i["orig_image_fullpath"] for i in all_votings]):
-            img = None
-            f_name = None
-            for voting in all_votings:
-                if voting["orig_image_fullpath"] == orig_img:
-                    if img is None:
-                        img = cv2.imread(voting["orig_image_fullpath"]).copy()
-                        f_name = voting["orig_image_name"]
+        for backmapping_image in backmapping_storage.get_all_images():
+            img =cv2.imread(backmapping_image)
+            for bm in backmapping_storage.get_backmappings_for_image(backmapping_image):
+                cv2.rectangle(img, (int(bm.x_min), int(bm.y_min)),
+                              (int(bm.x_max), int(bm.y_max)), (0, 0, 255), 2)
+                w = bm.x_max - bm.x_min
+                h = bm.y_max- bm.y_min
+                draw_text(
+                    img=img,
+                    text=str(bm.votings),
+                    pos=(int(bm.x_max) - int(w / 2), int(bm.y_max) - int(h / 2)),
+                )
 
-                    cv2.rectangle(img, (int(voting["x_min"]), int(voting["y_min"])),
-                                  (int(voting["x_max"]), int(voting["y_max"])), (0, 0, 255), 2)
-                    w = voting["x_max"] - voting["x_min"]
-                    h = voting["y_max"] - voting["y_min"]
-                    draw_text(
-                        img=img,
-                        text=str(voting["votings"]) + voting["source"],
-                        pos=(int(voting["x_max"]) - int(w / 2), int(voting["y_max"]) - int(h / 2)),
-                    )
+            cv2.imwrite(os.path.join(output_dir, bm.image_name), img)
 
-            cv2.imwrite(os.path.join(output_dir, f_name), img)
+        logger.info("Done")
+
 
         ctx["steps"].append({
             "identifier": self.get_step_identifier(),
