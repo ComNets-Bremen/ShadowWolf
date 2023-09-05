@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 from BaseClass import BaseClass
 from Storage.DetectionStorage import  DetectionStorage
 
-from wolf_utils.misc import batch, delta_time_format, getter_factory
+from wolf_utils.misc import batch, delta_time_format, getter_factory, draw_text
 
 
 class YoloDetectionClass(BaseClass):
@@ -92,7 +92,11 @@ class YoloDetectionClass(BaseClass):
                     h = y_max - y_min
                     cls = int(cls)
                     cv2.rectangle(img_w_label, (int(x_min), int(y_min)), (int(x_max), int(y_max)), (0,0,255), 2)
-                    cv2.putText(img_w_label, str(int(confidence*100)), (int(x_max)-int(w/2), int(y_max)-int(h/2)), cv2.FONT_HERSHEY_DUPLEX, 1, (0, 0, 255))
+                    draw_text(
+                        img=img_w_label,
+                        text=str(int(confidence*100)),
+                        pos=(int(x_max)-int(w/2), int(y_max)-int(h/2)),
+                    )
                     cut_to_detection = img.copy()[round(y_min):round(y_max), round(x_min):round(x_max)]
                     f, e = os.path.splitext(output_filename)
                     cut_image = os.path.join(output_dirs["cut_to_detection"], f"{f}_{i}{e}")
