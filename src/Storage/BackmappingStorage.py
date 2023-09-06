@@ -34,6 +34,33 @@ class Backmapping(Base):
     def __repr__(self):
         return f"Mapping for image {self.image_fullpath}"
 
+    def get_box_center_wh(self):
+        """
+        Returns a box in the format xCenter, yCenter, w, h
+
+        Returns
+        -------
+        """
+
+        w = round(self.x_max - self.x_min)
+        h = round(self.y_max - self.y_min)
+        x_center = round(self.x_min + (w/2))
+        y_center = round(self.y_min + (h/2))
+        return (x_center, y_center, w, h)
+
+    def get_votings(self):
+        """
+        Get the votings
+        Returns
+        -------
+
+        """
+        return json.loads(self.votings)
+
+    def get_votings_list(self):
+        return list(self.get_votings().items())
+
+
 
 ## End Table definitions
 
@@ -91,6 +118,19 @@ class BackmappingStorage:
     def get_backmappings_for_image(self, image):
         with Session(self.engine) as session:
             return session.execute(select(Backmapping).filter_by(image_fullpath=image)).scalars().all()
+
+    def get_backmapping_by_id(self, image_id):
+        """
+        Return a mapping based on the dataset id
+        Parameters
+        ----------
+        image_id    The dataset id
+
+        Returns     The mapping
+        -------
+        """
+        with Session(self.engine) as session:
+            return session.execute(select(Backmapping).filter_by(id=image_id)).scalars().one_or_none()
 
 if __name__ == "__main__":
     pass
