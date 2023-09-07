@@ -157,6 +157,9 @@ class BaseStorage:
         with Session(self.engine) as session:
             return session.execute(select(Image).where(Image.fullpath == fullpath)).scalars().one_or_none()
 
+    def get_all_images_fullpath(self):
+        with Session(self.engine) as session:
+            return session.execute(select(Image.fullpath)).scalars().all()
 
 class BasicAnalysisDataStorage(BaseStorage):
     def __init__(self, file):
