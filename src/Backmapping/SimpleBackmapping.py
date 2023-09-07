@@ -2,6 +2,7 @@
 import json
 import logging
 import os
+import cv2
 from pathlib import Path
 
 from Storage.BackmappingStorage import BackmappingStorage
@@ -13,8 +14,6 @@ from BaseClass import BaseClass
 from Storage.DataStorage import BaseStorage
 from Storage.DataStorage import SegmentDataStorage
 from Storage.DetectionStorage import DetectionStorage
-
-import cv2
 
 
 # Create batches based on the image timestamp
@@ -99,20 +98,11 @@ class BackmappingClass(BaseClass):
                     src_segment = src_segment_getter(img=src_images[0].image_fullpath)
 
                     logger.info(f"{src_segment}")
-                    det_x_min = src_images[0].x_min
-                    det_x_max = src_images[0].x_max
-                    det_y_min = src_images[0].y_min
-                    det_y_max = src_images[0].y_max
 
-                    seg_x_min = src_segment[0].x_min
-                    seg_x_max = src_segment[0].x_max
-                    seg_y_min = src_segment[0].y_min
-                    seg_y_max = src_segment[0].y_max
-
-                    x_min = seg_x_min + det_x_min
-                    x_max = seg_x_min + det_x_max
-                    y_min = seg_y_min + det_y_min
-                    y_max = seg_y_min + det_y_max
+                    x_min = src_segment[0].x_min + src_images[0].x_min
+                    x_max = src_segment[0].x_min + src_images[0].x_max
+                    y_min = src_segment[0].y_min + src_images[0].y_min
+                    y_max = src_segment[0].y_min + src_images[0].y_max
 
                     orig_image = bs.get_image_by_id(src_segment[0].base_image)
 
@@ -137,23 +127,12 @@ class BackmappingClass(BaseClass):
                         logger.info(f"Adding duplicate image data {src_images}")
                         src_segment = src_segment_getter(img=src_images.image_fullpath)[0]
 
-                        det_x_min = src_images.x_min
-                        det_x_max = src_images.x_max
-                        det_y_min = src_images.y_min
-                        det_y_max = src_images.y_max
-
-                        seg_x_min = src_segment.x_min
-                        seg_x_max = src_segment.x_max
-                        seg_y_min = src_segment.y_min
-                        seg_y_max = src_segment.y_max
-
-                        x_min = seg_x_min + det_x_min
-                        x_max = seg_x_min + det_x_max
-                        y_min = seg_y_min + det_y_min
-                        y_max = seg_y_min + det_y_max
+                        x_min = src_segment.x_min + src_images.x_min
+                        x_max = src_segment.x_min + src_images.x_max
+                        y_min = src_segment.y_min + src_images.y_min
+                        y_max = src_segment.y_min + src_images.y_max
 
                         orig_image = bs.get_image_by_id(src_segment.base_image)
-                        votings = {str(src_images.detection_class_numeric): src_images.confidence}
                         store_votings = {
                             SegmentDataStorage.get_class().__name__: json.loads(image["votings"]),
                             DetectionStorage.get_class().__name__  : {str(src_images.detection_class_numeric): src_images.confidence}
@@ -211,7 +190,6 @@ class BackmappingClass(BaseClass):
             cv2.imwrite(os.path.join(output_dir, bm.image_name), img)
 
         logger.info("Done")
-
 
         ctx["steps"].append({
             "identifier": self.get_step_identifier(),

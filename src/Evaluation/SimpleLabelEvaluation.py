@@ -3,12 +3,8 @@ import glob
 import os
 import shutil
 from pathlib import Path
-import cv2
 import uuid
-
-import importlib
 import json
-
 import logging
 
 from wolf_utils.misc import getter_factory
@@ -16,13 +12,10 @@ from wolf_utils.misc import getter_factory
 logger = logging.getLogger(__name__)
 
 from BaseClass import BaseClass
-
 from wolf_utils.ctx_helpers import get_last_variable
-
 from Storage.SimpleLabelStorage import SimpleLabelStorage
 
 
-## Does nothing. Is used as kind of a template for other classes
 class SimpleLabelEvaluationClass(BaseClass):
     def __init__(self, run_num):
         super().__init__()

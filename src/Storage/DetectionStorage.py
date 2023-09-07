@@ -90,6 +90,10 @@ class DetectionStorage:
         with Session(self.engine) as session:
             return session.execute(select(Detection)).all()
 
+    def get_class_name_by_id(self, class_id):
+        with Session(self.engine) as session:
+            return session.execute(select(Detection.detection_class).filter_by(detection_class_numeric=class_id).distinct()).scalar_one_or_none()
+
 
 if __name__ == "__main__":
     storage = DetectionStorage("sqlite:///test.sqlite")

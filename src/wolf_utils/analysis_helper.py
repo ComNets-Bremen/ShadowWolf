@@ -1,5 +1,11 @@
 import itertools
+import logging
 
+"""
+Some general functions for the analysis and combination of the classes / polls / votes etc.
+"""
+
+logger = logging.getLogger(__file__)
 
 def bbox_iou(box1, box2):
     """
@@ -19,13 +25,13 @@ def bbox_iou(box1, box2):
     inter_rect_y2 = min(b1_y2, b2_y2)
 
     # Intersection area
-    #inter_area = torch.clamp(inter_rect_x2 - inter_rect_x1, min=0) * torch.clamp(
+    # inter_area = torch.clamp(inter_rect_x2 - inter_rect_x1, min=0) * torch.clamp(
     #    inter_rect_y2 - inter_rect_y1, min=0
-    #)
+    # )
     inter_area = max(0, inter_rect_x2 - inter_rect_x1) * max(0, inter_rect_y2 - inter_rect_y1)
     # Union Area
-    b1_area = (b1_x2 - b1_x1 ) * (b1_y2 - b1_y1 )
-    b2_area = (b2_x2 - b2_x1 ) * (b2_y2 - b2_y1 )
+    b1_area = (b1_x2 - b1_x1) * (b1_y2 - b1_y1)
+    b2_area = (b2_x2 - b2_x1) * (b2_y2 - b2_y1)
 
     iou = inter_area / (b1_area + b2_area - inter_area + 1e-16)
 
@@ -73,6 +79,7 @@ def combine_votings(votings):
 
     return votings_list
 
+
 def get_possible_classes(votings):
     """
     Return the possible classes from the function combine_votings
@@ -92,7 +99,22 @@ def get_possible_classes(votings):
 
 
 def condense_votings(boxes_list, iou_thres, config_weights):
+    """
+    Converts an array containig boxes and all possible votings to a condensed array, i.e., combine the votings
+    and tidy up everything a little bit.
 
+    Parameters
+    ----------
+    boxes_list      The boxes in the format [((x_center, y_center, w, h), {"Origin": {<class>:voting}, ...}), ...]
+    iou_thres       The threshold for the intersections over union. If > this value -> combine to one box
+    config_weights  The weights for the votings. If multiple values are available: combine. Values are unified.
+
+    Returns
+    -------
+
+    [((x_center, y_center, w, h), [<weights per class>])]
+
+    """
     while True:
         is_changed = False
         combined_boxes = []
@@ -125,20 +147,33 @@ def condense_votings(boxes_list, iou_thres, config_weights):
                 if str(cls) in voting[1]:
                     w = config_weights.get(voting[0], None)
                     if w is None:
-                        raise ValueError(f"Missing weight in config.json. Possible options are {str(config_weights.keys())}")
+                        raise ValueError(
+                            f"Missing weight in config.json. Possible options are {str(config_weights.keys())}")
 
                     sum_weights += w
-                    total_weight += w*voting[1][str(cls)]
+                    total_weight += w * voting[1][str(cls)]
 
-            weights[str(cls)] = total_weight / sum_weights # Normalize
+            weights[str(cls)] = total_weight / sum_weights  # Normalize
         new_boxes_list.append((bbox, weights))
     return new_boxes_list
 
 
 def to_xmin_xmax(box):
-    x_min = int(box[0] - box[2]/2)
-    x_max = int(box[0] + box[2]/2)
-    y_min = int(box[1] - box[3]/2)
-    y_max = int(box[1] + box[3]/2)
+    """
+    Convert a box (x_center, y_center, w, h) to (x_min, x_max, y_min, y_max)
 
-    return (x_min, x_max, y_min, y_max)
+    Parameters
+    ----------
+    box     The (x_center, y_center, w, h) box
+
+    Returns
+    -------
+    The (x_min, x_max, y_min, y_max) box
+
+    """
+    x_min = int(box[0] - box[2] / 2)
+    x_max = int(box[0] + box[2] / 2)
+    y_min = int(box[1] - box[3] / 2)
+    y_max = int(box[1] + box[3] / 2)
+
+    return x_min, x_max, y_min, y_max
