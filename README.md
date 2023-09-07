@@ -30,6 +30,17 @@ Several tools for analysis etc.
 
 A fundamental documentation of this work.
 
+# Nice to know
+## Database update in August 2023
+
+As the structure has been changed in August 2023, you have to update the
+database when re-running the old results with the script. The commands are:
+
+    UPDATE detected_image SET source_datagetter = 'get_images' WHERE source_datagetter = 'getImages'
+    UPDATE simple_label_split SET source_getter = 'get_cut_images' WHERE source_getter = 'getCutImages'
+    UPDATE simple_label_split SET source_getter = 'get_images' WHERE source_getter = 'getImages'
+
 # Authors
 
 * Jens Dede, Sustainable Communication Networks, University of Bremen, 2023
+
