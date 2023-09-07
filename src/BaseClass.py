@@ -91,7 +91,7 @@ class BaseClass:
         for i in range(self.run_num, 0, -1):
             if key in self.config["modules"][i]:
                 return self.config["modules"][i][key]
-        return self.get_main_config()[key]
+        return self.get_main_config().get(key, None)
 
     # Get the images from the last step
     def get_input_data(self):
