@@ -6,10 +6,13 @@ import shutil
 from pathlib import Path
 from itertools import repeat, chain
 
+import cv2
+
 from Storage.DataStorage import BaseStorage
 from Storage.FinalDetectionStorage import WeightedDecisionStorage
 from wolf_utils.analysis_helper import to_xcenter_ycenter
 from wolf_utils.ctx_helpers import get_last_variable
+from wolf_utils.misc import draw_text
 
 logger = logging.getLogger(__name__)
 
@@ -43,6 +46,11 @@ class YoloExportClass(BaseClass):
         for image in bs.get_all_images_fullpath():
             logger.info(f"Handling image {image}")
             shutil.copy2(image, os.path.join(output_dirs["labels_images"], os.path.split(image)[1]))
+
+            img_fname = os.path.splitext(os.path.split(image)[1])[0] + ".jpg"
+            img_path = os.path.join(output_dirs["labelled_images"], img_fname)
+            img = cv2.imread(image)
+
             store_detections = []
             for detection in wds.get_detections_for_image(image, detection_threshold):
                 # Export in the format: (class_id, x_centre,  y_centre,  width,  height) with relative sizes
@@ -57,6 +65,18 @@ class YoloExportClass(BaseClass):
                 store_detections.append((str(class_numeric), x_center/w, y_center/h, b_w / w, b_h / h))
                 logger.info(f"STORED DETECTIONS: {store_detections}")
 
+                # Export debug images
+
+                cv2.rectangle(img, (detection.x_min, detection.y_min), (detection.x_max, detection.y_max), (0, 0, 255), 2)
+                draw_text(
+                    img=img,
+                    text=f"{class_str} ({class_numeric}, {round(class_probability*100)}%)",
+                    pos=(int(detection.x_min+(b_w/2)), int(detection.y_min+(b_h/2)))
+                )
+
+            cv2.imwrite(img_path, img)
+
+
             if len(store_detections):
                 txt_fname = os.path.splitext(os.path.split(image)[1])[0] + ".txt"
                 txt_path = os.path.join(output_dirs["labels_images"], txt_fname)
@@ -64,6 +84,8 @@ class YoloExportClass(BaseClass):
                     detection_lines = [" ".join([str(item) for item in items]) for items in store_detections]
                     logger.info(f"Writing detections {detection_lines} to file {txt_path}")
                     f.writelines(chain.from_iterable(zip(detection_lines, repeat("\n"))))
+
+
 
         ctx["steps"].append({
             "identifier": self.get_step_identifier(),
