@@ -177,3 +177,25 @@ def to_xmin_xmax(box):
     y_max = int(box[1] + box[3] / 2)
 
     return x_min, x_max, y_min, y_max
+
+
+def to_xcenter_ycenter(x_min, x_max, y_min, y_max):
+    """
+    Convert a (x_min, x_max, y_min, y_max) box to (x_center, y_center, w, h)
+    Parameters
+    ----------
+    x_min   should be clear
+    x_max   should be clear
+    y_min   should be clear
+    y_max   should be clear
+
+    Returns
+    -------
+    (x_center, y_center, w, h)
+
+    """
+    w = x_max - x_min
+    h = y_max - y_min
+    x_center = round(x_min + w / 2)
+    y_center = round(y_min + h / 2)
+    return x_center, y_center, w, h
