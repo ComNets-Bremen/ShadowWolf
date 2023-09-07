@@ -1,77 +1,103 @@
 {
-    "main_config" : {
-        "image_dir"   : "/home/jd/src/comnets-github/mAInZaun/ShadowWolf/example_images/easy-images/",
-        "image_filetype"    : "jpg"
+  "main_config": {
+    "image_dir"   : "/home/jd/src/comnets-github/mAInZaun/ShadowWolf/example_images/easy-images/",
+    "image_filetype": "jpg"
+  },
+  "modules": [
+    {
+      "name": "Analysis.BasicAnalysis.BasicAnalysisClass"
     },
-    "modules" : [
+    {
+      "name": "Batching.TimeBatching.TimeBatchingClass",
+      "exif_time_source": "DateTime",
+      "max_timediff_s": 5
+    },
+    {
+      "name": "Preprocessing.NullProcessing.NullPreprocessingClass"
+    },
+    {
+      "name": "Segmentation.MOG2Segmentation.MOG2Class",
+      "segments_dir": "segments",
+      "extra_dir": "extra_images",
+      "segmentation_min_area": 0.0001,
+      "segmentation_grey_limit": 10,
+      "segmentation_extend_boxes": 90,
+      "segmentation_detector_history": 0,
+      "segmentation_detector_varThreshold": 60,
+      "segmentation_detector_detectShadows": false,
+      "segmentation_detector_min_wh": 50,
+      "average_image_percentage": 20,
+      "average_image_min_images": 5,
+      "inputs": [
         {
-            "name" : "Analysis.BasicAnalysis.BasicAnalysisClass"
-        },{
-            "name" : "Batching.TimeBatching.TimeBatchingClass",
-            "exif_time_source" : "DateTime",
-            "max_timediff_s" : 5
-        },{
-            "name" : "Preprocessing.NullProcessing.NullPreprocessingClass"
-        },{
-            "name" : "Segmentation.MOG2Segmentation.MOG2Class",
-            "segments_dir" : "segments",
-            "extra_dir" : "extra_images",
-            "segmentation_min_area" : 0.0001,
-            "segmentation_grey_limit" : 10,
-            "segmentation_extend_boxes" : 90,
-            "segmentation_detector_history" : 0,
-            "segmentation_detector_varThreshold" : 60,
-            "segmentation_detector_detectShadows" : false,
-            "segmentation_detector_min_wh" : 50,
-            "average_image_percentage" : 20,
-            "average_image_min_images" : 5,
-            "inputs" : [
-                {
-                    "dataclass" : "Storage.DataStorage.BatchingDataStorage",
-                    "getter"    : "getBatches"
-                }
-            ]
-        },{
-            "name" : "Detection.YoloDetection.YoloDetectionClass",
-            "detect_model" : "best.pt",
-            "detect_repository" : "ultralytics/yolov5",
-            "detect_force_reload" : false,
-            "detect_batchsize" : 4,
-            "inputs" : [
-                {
-                    "dataclass" : "Storage.DataStorage.SegmentDataStorage",
-                    "getter"    : "get_images"
-                }
-            ],
-            "dataclass" : "Storage.DetectionStorage.DetectionStorage",
-            "getter" : "get_images"
-        },{
-            "name" : "Deduplication.Imagededup.ImagededupClass",
-            "inputs" : [
-                {
-                    "dataclass" : "Storage.DataStorage.SegmentDataStorage",
-                    "getter"    : "get_images"
-                },{
-                    "dataclass" : "Storage.DetectionStorage.DetectionStorage",
-                    "getter"    : "get_cut_images"
-                }
-            ]
-        },{
-            "name" : "Evaluation.SimpleLabelEvaluation.SimpleLabelEvaluationClass",
-            "inputs" : [
-                {
-                    "dataclass" :  "Storage.DetectionStorage.DetectionStorage",
-                    "getter"    :  "get_cut_images"
-                },{
-                    "dataclass" : "Storage.DataStorage.SegmentDataStorage",
-                    "getter"    : "get_images"
-                }
-            ],
-            "duplicates" : {
-                "dataclass" : "Storage.DuplicateStorage.DuplicateImageStorage",
-                "getter"    : "get_main_similar"
-            }
+          "dataclass": "Storage.DataStorage.BatchingDataStorage",
+          "getter": "get_batches"
         }
-    ]
-
+      ]
+    },
+    {
+      "name": "Detection.YoloDetection.YoloDetectionClass",
+      "detect_model": "best.pt",
+      "detect_repository": "ultralytics/yolov5",
+      "detect_force_reload": false,
+      "detect_batchsize": 4,
+      "inputs": [
+        {
+          "dataclass": "Storage.DataStorage.SegmentDataStorage",
+          "getter": "get_images"
+        }
+      ]
+    },
+    {
+      "name": "Deduplication.Imagededup.ImagededupClass",
+      "inputs": [
+        {
+          "dataclass": "Storage.DataStorage.SegmentDataStorage",
+          "getter": "get_images"
+        },
+        {
+          "dataclass": "Storage.DetectionStorage.DetectionStorage",
+          "getter": "get_cut_images"
+        }
+      ]
+    },
+    {
+      "name": "Evaluation.SimpleLabelEvaluation.SimpleLabelEvaluationClass",
+      "inputs": [
+        {
+          "dataclass": "Storage.DetectionStorage.DetectionStorage",
+          "getter": "get_cut_images"
+        },
+        {
+          "dataclass": "Storage.DataStorage.SegmentDataStorage",
+          "getter": "get_images"
+        }
+      ],
+      "duplicates": {
+        "dataclass": "Storage.DuplicateStorage.DuplicateImageStorage",
+        "getter": "get_main_similar"
+      }
+    },
+    {
+      "name": "Backmapping.SimpleBackmapping.BackmappingClass",
+      "inputs": [
+        {
+          "dataclass": "Storage.SimpleLabelStorage.SimpleLabelStorage",
+          "getter": "get_images"
+        }
+      ],
+      "duplicates": {
+        "dataclass": "Storage.DuplicateStorage.DuplicateImageStorage",
+        "getter": "get_similar"
+      }
+    },{
+      "name":"Decision.WeightedDecision.WeightedDecisionClass",
+      "iou_threshold": 0.2,
+      "weights" : {"Segment": 0.5, "Detection": 0.5},
+      "ignore_classes_higher" : 200
+    },{
+      "name": "Generators.YoloExportGenerator.YoloExportClass",
+      "detection_threshold": 0.5
+    }
+  ]
 }
