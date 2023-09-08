@@ -6,7 +6,7 @@ import cv2
 from pathlib import Path
 
 from Storage.BackmappingStorage import BackmappingStorage
-from wolf_utils.misc import getter_factory, draw_text
+from wolf_utils.misc import getter_factory, draw_text, find_other_sources
 
 logger = logging.getLogger(__name__)
 
@@ -38,6 +38,7 @@ class BackmappingClass(BaseClass):
         for input_source in self.get_module_config()["inputs"]:
             input_dataclass = input_source["dataclass"]
             input_getter = input_source["getter"]
+            logger.info(f"Using input_source {input_dataclass} with getter {input_getter}")
 
             for image in getter_factory(input_dataclass, input_getter, self.get_sqlite_file(ctx))():
                 logger.info(f"class: {image['source_class']}.{image['source_getter']}")
@@ -73,19 +74,64 @@ class BackmappingClass(BaseClass):
                     })
 
                     for dup in image_duplicates:
-                        src_images = src_images_getter(img=dup)[0]
-                        logger.info(f"Adding duplicate image data {src_images}")
-                        db_image = bs.get_image_by_id(src_images.base_image)
-                        all_votings.append({
-                            "orig_image_name": db_image.name,
-                            "orig_image_fullpath": db_image.fullpath,
-                            "x_max": src_images.x_max,
-                            "x_min": src_images.x_min,
-                            "y_max": src_images.y_max,
-                            "y_min": src_images.y_min,
-                            "votings": store_votings,
-                            "source": SegmentDataStorage.get_class().__name__,
-                        })
+                        src_images = src_images_getter(img=dup)
+                        logger.info(f"Got {src_images} for duplicate {dup}.")
+                        logger.info(f"Using source class \"{image['source_class']}\" and source getter \"{image['source_getter']}\"")
+                        if len(src_images) == 0:
+                            # TODO: Store image source in duplicates (getter and dataclass)
+                            # TODO: This is a workaround: Try to find the backreferences from the imagededup-handler
+                            src_images = find_other_sources(
+                                self.get_other_module_config("Deduplication.Imagededup.ImagededupClass"),
+                                               dup,self.get_sqlite_file(ctx))
+                        if src_images is not None and len(src_images):
+                            src_images = src_images[0]
+                            logger.info(f"Adding duplicate image data {src_images}")
+                            logger.info(f"{type(src_images)}, {type(src_images) == DetectionStorage.get_class()}")
+
+                            if type(src_images) == DetectionStorage.get_class():
+                                # Handle Detection duplicates
+                                src_segment = getter_factory(
+                                    src_images.source_dataclass,
+                                    src_images.source_datagetter,
+                                    self.get_sqlite_file(ctx)
+                                )(img=src_images.image_fullpath)
+
+                                x_min = src_segment[0].x_min + src_images.x_min
+                                x_max = src_segment[0].x_min + src_images.x_max
+                                y_min = src_segment[0].y_min + src_images.y_min
+                                y_max = src_segment[0].y_min + src_images.y_max
+
+                                orig_image = bs.get_image_by_id(src_segment[0].base_image)
+
+                                all_votings.append({
+                                    "orig_image_name": orig_image.name,
+                                    "orig_image_fullpath": orig_image.fullpath,
+                                    "x_min": x_min,
+                                    "x_max": x_max,
+                                    "y_min": y_min,
+                                    "y_max": y_max,
+                                    "votings": {
+                                        SegmentDataStorage.get_class().__name__: json.loads(image["votings"]),
+                                        },
+                                    "source": DetectionStorage.get_class().__name__,
+                                })
+
+                            elif type(src_images) == SegmentDataStorage.get_class():
+                                # Handle segmentation duplicates
+                                db_image = bs.get_image_by_id(src_images.base_image)
+                                all_votings.append({
+                                    "orig_image_name": db_image.name,
+                                    "orig_image_fullpath": db_image.fullpath,
+                                    "x_max": src_images.x_max,
+                                    "x_min": src_images.x_min,
+                                    "y_max": src_images.y_max,
+                                    "y_min": src_images.y_min,
+                                    "votings": store_votings,
+                                    "source": type(src_images).__name__,
+                                })
+                        else:
+                            # Happens if we have same pictures from Detection and segmentation.
+                            raise ValueError(f"Cannot resoulve duplicate {dup}")
 
                 elif isinstance(src_images[0], DetectionStorage.get_class()):
                     logger.info("DETECTION")

@@ -125,6 +125,7 @@ def condense_votings(boxes_list, iou_thres, config_weights):
                 combined_boxes.append(a)
                 combined_boxes.append(b)
                 new_boxes_list.append((bbox_union(a[0], b[0]), combine_votings([a[1], b[1]])))
+                break
 
         for b in boxes_list:
             if b not in combined_boxes:
@@ -134,7 +135,6 @@ def condense_votings(boxes_list, iou_thres, config_weights):
         if not is_changed:
             break
     # Right now, we combined boxes and added all votings. Next: Find a meaningful way of combining the votes from all boxes
-
     new_boxes_list = []
 
     for box in boxes_list:

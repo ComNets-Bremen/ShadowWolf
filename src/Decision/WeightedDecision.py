@@ -54,7 +54,7 @@ class WeightedDecisionClass(BaseClass):
 
             boxes_list = [(v.get_box_center_wh(), v.get_votings_list()) for v in bms]
             len_before = len(boxes_list)
-            logger.info(f"Boxes before condensing: {boxes_list}")
+            logger.info(f"Boxes before condensing ({len(boxes_list)}): {boxes_list}")
 
             cv = condense_votings(
                 boxes_list,

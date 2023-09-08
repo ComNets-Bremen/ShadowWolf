@@ -98,6 +98,7 @@ class ImageBatch(Base):
 class Segment(Base):
     __tablename__ = "image_segments"
     id: Mapped[int] = mapped_column(primary_key=True)
+    #TODO: Rename to image_fullpath
     base_image: Mapped["Image"] = mapped_column(ForeignKey("image.id", onupdate="cascade"))
 
     creator: Mapped[Optional[str]] = mapped_column(String())

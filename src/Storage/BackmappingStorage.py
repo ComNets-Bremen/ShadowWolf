@@ -108,8 +108,6 @@ class BackmappingStorage:
                 )
                 session.add(backmapping)
                 session.commit()
-            else:
-                logger.info("Dropping already existing backmapping entry.")
 
     def get_all_images(self):
         with Session(self.engine) as session:
