@@ -98,6 +98,8 @@
     },{
       "name": "Generators.YoloExportGenerator.YoloExportClass",
       "detection_threshold": 0.5
+    },{
+      "name": "Generators.ReviewExportGenerator.ReviewExportClass"
     }
   ]
 }
