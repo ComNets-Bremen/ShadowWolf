@@ -40,6 +40,12 @@ database when re-running the old results with the script. The commands are:
     UPDATE simple_label_split SET source_getter = 'get_cut_images' WHERE source_getter = 'getCutImages'
     UPDATE simple_label_split SET source_getter = 'get_images' WHERE source_getter = 'getImages'
 
+## Version v0.1
+
+The everything till here just requires minor changes (c.f. previous point).
+Afterwards, several major changes were done: The results cannot be reused, the
+scripts have to be re-run.
+
 # Authors
 
 * Jens Dede, Sustainable Communication Networks, University of Bremen, 2023
