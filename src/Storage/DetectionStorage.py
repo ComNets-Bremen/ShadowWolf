@@ -2,6 +2,8 @@
 
 import logging
 
+from Storage.DataStorage import BaseStorage
+
 logger = logging.getLogger(__name__)
 
 from sqlalchemy import String, Integer, Float
@@ -20,10 +22,10 @@ class Base(DeclarativeBase):
 class Detection(Base):
     __tablename__ = "detected_image"
     id = mapped_column(Integer, primary_key=True)
-    image_fullpath = mapped_column(String())
+    image_fullpath = mapped_column(String()) # The original image in the fullpath format
     cut_image = mapped_column(String())
-    source_dataclass = mapped_column(String())
-    source_datagetter = mapped_column(String())
+    source_class = mapped_column(String())
+    source_getter = mapped_column(String())
     detection_class = mapped_column(String)
     detection_class_numeric = mapped_column(Integer)
     confidence = mapped_column(Float)
@@ -40,16 +42,32 @@ class Detection(Base):
 
 
 class DetectionStorage:
-    def __init__(self, file, input_dataclass=None, input_getter=None):
+    def __init__(self, file, source_class=None, source_getter=None):
         self.file = file
         self.engine = create_engine(self.file)
         Base.metadata.create_all(self.engine)
-        self.input_dataclass = input_dataclass
-        self.input_getter = input_getter
+        self.source_class = source_class
+        self.source_getter = source_getter
 
     @staticmethod
     def get_class():
         return Detection
+
+    @staticmethod
+    def convert_to_voting_dict(image: Detection, bs: BaseStorage) -> dict:
+        orig_image = bs.get_image_by_fullpath(image.image_fullpath)
+
+        return {
+                        "orig_image_name": orig_image.name,
+                        "orig_image_fullpath": orig_image.fullpath,
+                        "x_max": image.x_max,
+                        "x_min": image.x_min,
+                        "y_max": image.y_max,
+                        "y_min": image.y_min,
+                        "votings": [DetectionStorage.get_class().__name__, {str(image.detection_class_numeric): image.confidence}],
+                        "source": DetectionStorage.get_class().__name__,
+                    }
+
 
     def store(self, fullpath, cut_image, detection_class, detection_class_numeric, confidence, x_min, y_min, x_max,
               y_max):
@@ -57,8 +75,8 @@ class DetectionStorage:
             detection = Detection(
                 image_fullpath=fullpath,
                 cut_image=cut_image,
-                source_dataclass=self.input_dataclass,
-                source_datagetter=self.input_getter,
+                source_class=self.source_class,
+                source_getter=self.source_getter,
                 detection_class=detection_class,
                 detection_class_numeric=detection_class_numeric,
                 confidence=confidence,

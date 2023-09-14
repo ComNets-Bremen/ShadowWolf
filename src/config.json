@@ -1,6 +1,6 @@
 {
   "main_config": {
-    "image_dir"   : "/home/jd/src/comnets-github/mAInZaun/ShadowWolf/example_images/easy-images/",
+    "image_dir"   : "/home/jd/src/comnets-github/mAInZaun/ShadowWolf/ground_truth/reference",
     "image_filetype": "jpg"
   },
   "modules": [
@@ -44,7 +44,10 @@
       "inputs": [
         {
           "dataclass": "Storage.DataStorage.SegmentDataStorage",
-          "getter": "get_images"
+          "getter": "get_segments"
+        },{
+          "dataclass": "Storage.DataStorage.BasicAnalysisDataStorage",
+          "getter": "get_all_images"
         }
       ]
     },
@@ -53,7 +56,7 @@
       "inputs": [
         {
           "dataclass": "Storage.DataStorage.SegmentDataStorage",
-          "getter": "get_images"
+          "getter": "get_segments"
         },
         {
           "dataclass": "Storage.DetectionStorage.DetectionStorage",
@@ -70,7 +73,7 @@
         },
         {
           "dataclass": "Storage.DataStorage.SegmentDataStorage",
-          "getter": "get_images"
+          "getter": "get_segments"
         }
       ],
       "duplicates": {

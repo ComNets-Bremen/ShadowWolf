@@ -12,8 +12,8 @@ from Storage.DataStorage import BatchingDataStorage, BasicAnalysisDataStorage
 
 ## Create batches based on the image timestamp
 class TimeBatchingClass(BaseClass):
-    def __init__(self, run_num):
-        super().__init__()
+    def __init__(self, run_num, config, *args, **kwargs):
+        super().__init__(config=config)
         self.run_num = run_num
 
     def run(self, ctx):
@@ -26,12 +26,13 @@ class TimeBatchingClass(BaseClass):
         image_db = []
 
         for image in ds.get_all_images():
-            meta, exif = analysis_storage.get_by_instance(image[0])
+            instance = analysis_storage.get_image_by_fullpath(image)
+            meta, exif = analysis_storage.get_by_instance(instance)
             for e in exif:
                 if e.exif_name == self.get_module_config()["exif_time_source"]:
                     dt = datetime.datetime.strptime(e.exif_value, "%Y:%m:%d %H:%M:%S")
                     image_db.append({
-                        "image": image[0],
+                        "image": instance,
                         "dt": dt
                     })
                     continue

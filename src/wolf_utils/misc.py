@@ -124,7 +124,6 @@ def draw_text(img, text,
 
 def find_other_sources(getters, image_name, sqlitefile):
     for getter in getters["inputs"]:
-        print(getter)
         g = getter_factory(getter["dataclass"], getter["getter"], sqlitefile)
         i = g(image_name)
         if len(i):

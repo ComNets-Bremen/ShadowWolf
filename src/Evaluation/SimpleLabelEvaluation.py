@@ -17,8 +17,8 @@ from Storage.SimpleLabelStorage import SimpleLabelStorage
 
 
 class SimpleLabelEvaluationClass(BaseClass):
-    def __init__(self, run_num):
-        super().__init__()
+    def __init__(self, run_num, config, *args, **kwargs):
+        super().__init__(config=config)
         self.run_num = run_num
 
     def run(self, ctx):
@@ -40,7 +40,6 @@ class SimpleLabelEvaluationClass(BaseClass):
                 results = json.load(jf)
 
             for won_images in results["images"]:
-                print(won_images)
                 ds.set_relative_voting(won_images["image_original_name"], won_images["relative_class_voting"])
 
             continue_after_this_step = True
@@ -56,11 +55,12 @@ class SimpleLabelEvaluationClass(BaseClass):
                 _getter = self.get_module_config()["duplicates"]["getter"]
                 dups_getter = getter_factory(_dataclass, _getter, self.get_sqlite_file(ctx))
 
-            images = []
-            for input_source in self.get_module_config()["inputs"]:
+            for input_source_num, input_source in enumerate(self.get_module_config()["inputs"]):
+                images = []
 
                 input_dataclass = input_source["dataclass"]
                 input_getter = input_source["getter"]
+                logger.info(f"Handling source {input_source_num}: {input_dataclass} -> {input_getter}")
                 for image in getter_factory(input_dataclass, input_getter, self.get_sqlite_file(ctx))():
                     images.append({
                         "image": image,
@@ -70,15 +70,15 @@ class SimpleLabelEvaluationClass(BaseClass):
 
                 if dups_getter is not None:
                     _len_before = len(images)
-                    logger.info("Removing duplicates...")
+                    logger.info(f"Source {input_source_num}: Removing duplicates...")
                     images = [image for image in images if image["image"] == dups_getter(image["image"])]
-                    logger.info(f"Removed {_len_before - len(images)} images.")
+                    logger.info(f"Source {input_source_num}: Removed {_len_before - len(images)} images.")
 
                 for image_dict in images:
                     image = image_dict["image"]
                     image_dataclass = image_dict["dataclass"]
                     image_getter = image_dict["getter"]
-                    logger.info(f"Handling image {image} from class {image_dataclass}")
+                    logger.info(f"Source {input_source_num}: Handling image {image} from class {image_dataclass}")
                     filename = os.path.split(image)[1]
                     name, ext = os.path.splitext(filename)
 

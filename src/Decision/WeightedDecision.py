@@ -30,8 +30,8 @@ from BaseClass import BaseClass
 
 
 class WeightedDecisionClass(BaseClass):
-    def __init__(self, run_num):
-        super().__init__()
+    def __init__(self, run_num, config, *args, **kwargs):
+        super().__init__(config=config)
         self.run_num = run_num
 
     def run(self, ctx):

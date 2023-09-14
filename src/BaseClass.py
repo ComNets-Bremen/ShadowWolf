@@ -2,7 +2,6 @@
 
 import os
 import json
-import importlib
 import datetime
 import shutil
 from pathlib import Path
@@ -22,10 +21,10 @@ logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s - %(message)s
 logger = logging.getLogger(__name__)
 
 class BaseClass:
-    def __init__(self, config="config.json", *args, **kwargs):
+    def __init__(self, config, *args, **kwargs):
         self.config = None
         self.config_filename = config
-        with open(config, "r") as f:
+        with open(self.config_filename, "r") as f:
             self.config = json.load(f)
 
     def get_new_context(self, output=None, cont=0):
@@ -62,7 +61,7 @@ class BaseClass:
         if ctx is None:
             ctx = self.get_new_context()
         for i, m in enumerate(self.config["modules"][cont:], start=cont):
-            cont, ctx = getter_factory(m["name"], "run", i)(ctx)
+            cont, ctx = getter_factory(m["name"], "run", i, config=self.config_filename)(ctx)
 
             # Store the end context to a pickle
             with open(os.path.join(ctx["output_dir"], f"{i}_end_ctx.pickle"), "wb") as f:
@@ -138,7 +137,11 @@ if __name__ == "__main__":
     parser.add_argument('-d', '--cont', type=int, default=0, help="Continue from a certain step. Defaults to 0 (i.e. start from the beginning).")
     args = parser.parse_args()
 
+    if args.cont > 0 and args.output is None:
+        raise ValueError(f"You have to specify an output directory if you would like to continue an existing run.")
+
     bc = BaseClass(config=args.config)
     ctx = bc.get_new_context(output=args.output, cont=args.cont)
     bc.run(ctx, cont=args.cont)
     logger.info(f"Done. Stored logfile at {logfile}")
+    shutil.copy(logfile, ctx["output_dir"])

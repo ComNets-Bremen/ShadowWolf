@@ -58,7 +58,9 @@ class Backmapping(Base):
         return json.loads(self.votings)
 
     def get_votings_list(self):
-        return list(self.get_votings().items())
+        if isinstance(self.get_votings(), dict):
+            return list(self.get_votings().items())
+        return list(self.get_votings())
 
 
 

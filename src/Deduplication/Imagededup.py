@@ -10,8 +10,8 @@ from BaseClass import BaseClass
 from Storage.DuplicateStorage import DuplicateImageStorage
 
 class ImagededupClass(BaseClass):
-    def __init__(self, run_num):
-        super().__init__()
+    def __init__(self, run_num, config, *args, **kwargs):
+        super().__init__(config=config)
         self.run_num = run_num
 
     def run(self, ctx):
@@ -19,10 +19,14 @@ class ImagededupClass(BaseClass):
         logger.info(f"Config: {self.get_module_config()}")
 
         input_images = []
+        dataclasses  = {}
+        getter       = {}
+
         for input_cls in self.get_module_config()["inputs"]:
-            input_dataclass = input_cls["dataclass"]
-            getter = getter_factory(input_dataclass, input_cls["getter"], self.get_sqlite_file(ctx))
-            input_images.extend(getter())
+            for img in  getter_factory(input_cls["dataclass"], input_cls["getter"], self.get_sqlite_file(ctx))():
+                input_images.append(img)
+                dataclasses[img] = input_cls["dataclass"]
+                getter[img]      = input_cls["getter"]
 
         # Unify list, remove duplicates
         input_images = list(dict.fromkeys(input_images))
@@ -42,7 +46,7 @@ class ImagededupClass(BaseClass):
         for dup in duplicates:
             if len(duplicates[dup]) > 0:
                 for related_dup in duplicates[dup]:
-                    duplicat_storage.add_duplicate(dup, related_dup)
+                    duplicat_storage.add_duplicate((dup, dataclasses[dup], getter[dup]), (related_dup, dataclasses[related_dup], getter[related_dup]))
                 logger.info(f"similar images for {dup}: {duplicat_storage.get_similar(dup)}")
 
 

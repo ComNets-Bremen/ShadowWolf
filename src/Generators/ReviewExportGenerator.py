@@ -20,8 +20,8 @@ https://github.com/rafaelpadilla/review_object_detection_metrics
 """
 
 class ReviewExportClass(BaseClass):
-    def __init__(self, run_num):
-        super().__init__()
+    def __init__(self, run_num, config, *args, **kwargs):
+        super().__init__(config=config)
         self.run_num = run_num
 
     def run(self, ctx):

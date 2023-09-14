@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-
+import json
 import logging
 
 logger = logging.getLogger(__name__)
@@ -146,9 +146,12 @@ class BaseStorage:
                 session.commit()
                 return session.execute(select(Image).where(Image.fullpath == fullpath)).one_or_none()
 
-    def get_all_images(self):
+    def get_all_images(self, img=None):
         with Session(self.engine) as session:
-            return session.execute(select(Image)).all()
+            if img is None:
+                return session.execute(select(Image.fullpath)).scalars().all()
+            else:
+                return session.execute(select(Image).filter_by(fullpath=img)).scalars().all()
 
     def get_image_by_id(self, image_id):
         with Session(self.engine) as session:
@@ -210,7 +213,6 @@ class BatchingDataStorage(BaseStorage):
             if image is None:
                 return None
             image = image[0]
-            print(image.batch.images)
             return image.batch
 
     def get_batches(self):
@@ -225,6 +227,21 @@ class SegmentDataStorage(BaseStorage):
     @staticmethod
     def get_class():
         return Segment
+
+    @staticmethod
+    def convert_to_voting_dict(image: Segment, bs: BaseStorage) -> dict:
+        orig_image = bs.get_image_by_fullpath(image.segment_fullpath)
+
+        return {
+                        "orig_image_name": orig_image.name,
+                        "orig_image_fullpath": orig_image.fullpath,
+                        "x_max": image.x_max,
+                        "x_min": image.x_min,
+                        "y_max": image.y_max,
+                        "y_min": image.y_min,
+                        "votings": [],
+                        "source": SegmentDataStorage.get_class().__name__,
+                    }
 
 
     def store(self, image, segment_fullpath, y_min, y_max, x_min, x_max, output_width, output_height, creator=None):

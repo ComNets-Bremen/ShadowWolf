@@ -58,18 +58,8 @@ class SimpleLabelStorage:
             session.commit()
 
     def get_images(self):
-        ret = []
         with Session(self.engine) as session:
-            for i in session.execute(select(SimpleEvalSplit)).all():
-                ret.append({
-                    "source_fullpath" : i[0].source_fullpath,
-                    "dest_fullpath" : i[0].dest_fullpath,
-                    "source_class" : i[0].source_class,
-                    "source_getter" : i[0].source_getter,
-                    "votings" : i[0].relative_votings,
-                })
-
-        return ret
+            return session.execute(select(SimpleEvalSplit)).scalars().all()
 
     def set_relative_voting(self, image_name, votings):
         if type(votings) is not str:
@@ -89,4 +79,4 @@ class SimpleLabelStorage:
 
 
 if __name__ == "__main__":
-    storage = SimpleEvalSplit("sqlite:///test.sqlite")
+    pass

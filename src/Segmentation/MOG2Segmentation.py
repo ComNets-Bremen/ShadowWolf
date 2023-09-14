@@ -21,8 +21,8 @@ from wolf_utils.ImageHandling import get_avg_image, filter_small_boxes, group_re
 
 ## Does nothing. Is used as kind of a template for other classes
 class MOG2Class(BaseClass):
-    def __init__(self, run_num):
-        super().__init__()
+    def __init__(self, run_num, config, *args, **kwargs):
+        super().__init__(config=config)
         self.run_num = run_num
 
     def run(self, ctx):

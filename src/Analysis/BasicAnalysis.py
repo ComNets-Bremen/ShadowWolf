@@ -15,8 +15,8 @@ from Storage.DataStorage import BasicAnalysisDataStorage
 
 ## Stores exif and cam data in sqlite-database
 class BasicAnalysisClass(BaseClass):
-    def __init__(self, run_num):
-        super().__init__()
+    def __init__(self, run_num, config, *args, **kwargs):
+        super().__init__(config=config)
         self.run_num = run_num
 
     def run(self, ctx):
