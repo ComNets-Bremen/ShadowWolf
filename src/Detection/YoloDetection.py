@@ -65,7 +65,7 @@ class YoloDetectionClass(BaseClass):
             handled_images = 0
             start_time_detection = time.time()
 
-            logger.info(f"Source {image_input_num}: Starting detection...")
+            logger.info(f"Source {image_input_num+1} out of {len(self.get_module_config()['inputs'])}: Starting detection...")
             for i in batch(input_images, self.get_module_config().get("detect_batchsize", 4)):
                 results = model(i)
                 classes = results.names
