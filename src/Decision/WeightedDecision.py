@@ -60,6 +60,7 @@ class WeightedDecisionClass(BaseClass):
                 boxes_list,
                 self.get_module_config()["iou_threshold"],
                 self.get_module_config()["weights"],
+                self.get_module_config().get("box_combine_method", "bbox_union")
             )
             logger.info(f"Boxes after condensing: {cv}")
 
