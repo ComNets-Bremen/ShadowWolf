@@ -106,15 +106,15 @@ class DuplicateImageStorage:
             similar_images.extend([i for i in img[0].left_images])
             return list(set(similar_images))
 
-    def get_main_similar(self, fullname):
-        img = self.get_image(fullname)
+    def get_main_similar(self, fullname) -> str:
+        img = self.get_image(fullname) # Get image id
         similar_images = self.get_similar(fullname)
         if similar_images is None:
             return fullname
         if img is not None:
             similar_images.append(img[0])
         similar_images.sort(key=lambda db_entry: db_entry.id)
-        return similar_images[0]
+        return similar_images[0].fullpath
 
     def get_all_images(self):
         with Session(self.engine) as session:
@@ -122,4 +122,13 @@ class DuplicateImageStorage:
 
 
 if __name__ == "__main__":
-    pass
+    dis = DuplicateImageStorage("sqlite:///test.sqlite")
+    image_1_1 = ("test11.jpg", "None", "None")
+    image_1_2 = ("test12.jpg", "None", "None")
+    image_1_3 = ("test13.jpg", "None", "None")
+    image_2_1 = ("test21.jpg", "None", "None")
+    dis.add_duplicate(image_1_1, image_1_2)
+    dis.add_duplicate(image_1_1, image_1_3)
+    print(dis.get_main_similar(image_1_1[0]))
+    print(dis.get_main_similar(image_1_2[0]))
+    print(dis.get_main_similar(image_2_1[0]))
