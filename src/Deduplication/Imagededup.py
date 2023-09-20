@@ -47,9 +47,6 @@ class ImagededupClass(BaseClass):
             if len(duplicates[dup]) > 0:
                 for related_dup in duplicates[dup]:
                     duplicat_storage.add_duplicate((dup, dataclasses[dup], getter[dup]), (related_dup, dataclasses[related_dup], getter[related_dup]))
-                logger.info(f"similar images for {dup}: {duplicat_storage.get_similar(dup)}")
-
-
 
         ctx["steps"].append({
                 "identifier" : self.get_step_identifier(),
