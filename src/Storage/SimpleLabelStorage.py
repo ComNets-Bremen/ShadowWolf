@@ -1,6 +1,13 @@
 #!/usr/bin/env python3
 import json
 import logging
+import sys
+
+from Storage.DataStorage import SegmentDataStorage
+from Storage.DetectionStorage import DetectionStorage
+from wolf_utils.misc import getter_factory
+from wolf_utils.types import ReturnDetectionDict
+
 logger = logging.getLogger(__name__)
 
 from sqlalchemy import Column
@@ -44,6 +51,23 @@ class SimpleLabelStorage:
     @staticmethod
     def get_class():
         return SimpleEvalSplit
+
+    @staticmethod
+    def get_fullscale_voting(image: SimpleEvalSplit, sqlitefile: str)-> ReturnDetectionDict:
+        src_image = getter_factory(image.source_class, image.source_getter, sqlitefile)(image.source_fullpath)[0]
+        if isinstance(src_image, DetectionStorage.get_class()):
+            votings = DetectionStorage.get_fullscale_voting(src_image, sqlitefile)
+        elif isinstance(src_image, SegmentDataStorage.get_class()):
+            votings = SegmentDataStorage.get_fullscale_voting(src_image, sqlitefile)
+        else:
+            raise ValueError(f"Type not implemented: {type(image)}")
+
+        votings["votings"].append(
+            # "Segment" is used for the weights later on
+            ("Segment", json.loads(image.relative_votings))
+        )
+
+        return votings
 
     def store(self, source_class, source_getter, src_file, dest_file):
         with Session(self.engine) as session:

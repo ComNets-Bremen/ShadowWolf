@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
-
+import json
 import logging
 
-from Storage.DataStorage import BaseStorage
+from Storage.DataStorage import Image, SegmentDataStorage, BaseStorage
+from wolf_utils.misc import getter_factory
+from wolf_utils.types import ReturnDetectionDict
 
 logger = logging.getLogger(__name__)
 
@@ -54,19 +56,50 @@ class DetectionStorage:
         return Detection
 
     @staticmethod
-    def convert_to_voting_dict(image: Detection, bs: BaseStorage) -> dict:
-        orig_image = bs.get_image_by_fullpath(image.image_fullpath)
+    def get_fullscale_voting(image: Detection, sqlitefile: str) -> ReturnDetectionDict:
+        src_image = getter_factory(image.source_class, image.source_getter, sqlitefile)(image.image_fullpath)
+        if len(src_image) != 1:
+            raise ValueError(f"Got wrong number of images. Should be one, got {len(src_image)}")
+        src_image = src_image[0]
 
-        return {
-                        "orig_image_name": orig_image.name,
-                        "orig_image_fullpath": orig_image.fullpath,
-                        "x_max": image.x_max,
-                        "x_min": image.x_min,
-                        "y_max": image.y_max,
-                        "y_min": image.y_min,
-                        "votings": [DetectionStorage.get_class().__name__, {str(image.detection_class_numeric): image.confidence}],
-                        "source": DetectionStorage.get_class().__name__,
-                    }
+        if isinstance(src_image, Image):
+            # Reached base image
+            votings = BaseStorage.get_fullscale_voting(src_image, sqlitefile)
+
+            votings["x_min"] = image.x_min
+            votings["x_max"] = image.x_max
+            votings["y_min"] = image.y_min
+            votings["y_max"] = image.y_max
+            votings["votings"].append(
+                # "Detection is used for the weights later on
+                ("Detection", {str(image.detection_class_numeric): image.confidence})
+            )
+            logger.info(f"votings: {votings}")
+            return votings
+        elif isinstance(src_image, SegmentDataStorage.get_class()):
+            votings = SegmentDataStorage.get_fullscale_voting(src_image, sqlitefile)
+            print(votings)
+            if votings["x_min"] is None:
+                votings["x_min"] = image.x_min
+                votings["x_max"] = image.x_max
+                votings["y_min"] = image.y_min
+                votings["y_max"] = image.y_max
+            else:
+                votings["x_min"] = votings["x_min"] + image.x_min
+                votings["x_max"] = votings["x_min"] + image.x_max
+                votings["y_min"] = votings["y_min"] + image.y_min
+                votings["y_max"] = votings["y_min"] + image.y_max
+
+
+            votings["votings"].append(
+                # "Detection is used for the weights later on
+                ("Detection", {str(image.detection_class_numeric): image.confidence})
+            )
+            logger.info(f"votings: {votings}")
+            return votings
+        else:
+            raise ValueError(f"Type not implemented: {type(src_image)}")
+
 
 
     def store(self, fullpath, cut_image, detection_class, detection_class_numeric, confidence, x_min, y_min, x_max,

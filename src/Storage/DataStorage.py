@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-import json
 import logging
 
 logger = logging.getLogger(__name__)
@@ -19,6 +18,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 from sqlalchemy import select
 
+from wolf_utils.types import ReturnDetectionDict
 
 ## Table definitions
 class Base(DeclarativeBase):
@@ -165,6 +165,20 @@ class BaseStorage:
         with Session(self.engine) as session:
             return session.execute(select(Image.fullpath)).scalars().all()
 
+    @staticmethod
+    def get_fullscale_voting(image: Image, sqlitefile: str) -> ReturnDetectionDict:
+        return {
+            "orig_image_name": str(image.name),
+            "orig_image_fullpath": str(image.fullpath),
+            "x_max": None,
+            "x_min": None,
+            "y_max": None,
+            "y_min": None,
+            "votings": [],
+            "source": None,
+        }
+
+
 class BasicAnalysisDataStorage(BaseStorage):
     def __init__(self, file):
         super().__init__(file)
@@ -228,21 +242,6 @@ class SegmentDataStorage(BaseStorage):
     def get_class():
         return Segment
 
-    @staticmethod
-    def convert_to_voting_dict(image: Segment, bs: BaseStorage) -> dict:
-        orig_image = bs.get_image_by_fullpath(image.segment_fullpath)
-
-        return {
-                        "orig_image_name": orig_image.name,
-                        "orig_image_fullpath": orig_image.fullpath,
-                        "x_max": image.x_max,
-                        "x_min": image.x_min,
-                        "y_max": image.y_max,
-                        "y_min": image.y_min,
-                        "votings": [],
-                        "source": SegmentDataStorage.get_class().__name__,
-                    }
-
 
     def store(self, image, segment_fullpath, y_min, y_max, x_min, x_max, output_width, output_height, creator=None):
         with Session(self.engine) as session:
@@ -286,6 +285,23 @@ class SegmentDataStorage(BaseStorage):
     def get_images(self, img=None):
         logger.warning(f"Deprecation warning: Please use get_segments instead of  get_images for the class {__name__}")
         return self.get_segments(img)
+
+    @staticmethod
+    def get_fullscale_voting(image: Segment, sqlitefile: str) -> ReturnDetectionDict:
+        # Base image of segment is immer the direct image class. So get it by the id:
+        base_image = BaseStorage(sqlitefile).get_image_by_id(image.base_image)
+        if isinstance(base_image, Image):
+            votings = BaseStorage.get_fullscale_voting(base_image, sqlitefile)
+
+            votings["x_min"] = image.x_min
+            votings["x_max"] = image.x_max
+            votings["y_min"] = image.y_min
+            votings["y_max"] = image.y_max
+
+            return votings
+        else:
+            raise ValueError(f"Unhandled class: {type(image.base_image)}")
+
 
 
 if __name__ == "__main__":
