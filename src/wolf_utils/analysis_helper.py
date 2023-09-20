@@ -60,6 +60,15 @@ def bbox_union(box1, box2):
     return [x, y, w, h]
 
 
+def bbox_smaller_box(box1, box2):
+    size_box1 = box1[2] * box1[3]
+    size_box2 = box2[2] * box2[3]
+
+    if size_box1 < size_box2:
+        return box1
+    return box2
+
+
 def combine_votings(votings):
     """
     Combine the votings.
@@ -98,7 +107,7 @@ def get_possible_classes(votings):
     return set(classes)
 
 
-def condense_votings(boxes_list, iou_thres, config_weights):
+def condense_votings(boxes_list, iou_thres, config_weights, box_combine_method="bbox_union"):
     """
     Converts an array containig boxes and all possible votings to a condensed array, i.e., combine the votings
     and tidy up everything a little bit.
@@ -115,6 +124,11 @@ def condense_votings(boxes_list, iou_thres, config_weights):
     [((x_center, y_center, w, h), [<weights per class>])]
 
     """
+
+    if box_combine_method in globals():
+        combine_method = globals()[box_combine_method]
+    else:
+        raise ValueError(f"Method \"{box_combine_method}\" is not defined. Options are {[g for g in globals() if g.startswith('bbox_')]}")
     while True:
         is_changed = False
         combined_boxes = []
@@ -124,7 +138,7 @@ def condense_votings(boxes_list, iou_thres, config_weights):
                 is_changed = True
                 combined_boxes.append(a)
                 combined_boxes.append(b)
-                new_boxes_list.append((bbox_union(a[0], b[0]), combine_votings([a[1], b[1]])))
+                new_boxes_list.append((combine_method(a[0], b[0]), combine_votings([a[1], b[1]])))
                 break
 
         for b in boxes_list:
@@ -145,13 +159,17 @@ def condense_votings(boxes_list, iou_thres, config_weights):
             total_weight = 0
             for voting in votings:
                 if str(cls) in voting[1]:
-                    w = config_weights.get(voting[0], None)
-                    if w is None:
-                        raise ValueError(
-                            f"Missing weight in config.json. Possible options are {str(config_weights.keys())}")
+                    class_probability = voting[1][str(cls)]
+                else:
+                    class_probability = 0.0 # Got no votes for this class -> rate 0
 
-                    sum_weights += w
-                    total_weight += w * voting[1][str(cls)]
+                w = config_weights.get(voting[0], None)
+                if w is None:
+                    raise ValueError(
+                        f"Missing weight in config.json. Possible options are {str(config_weights.keys())}. Tried to access {voting[0]}")
+
+                sum_weights += w
+                total_weight += w * class_probability
 
             weights[str(cls)] = total_weight / sum_weights  # Normalize
         new_boxes_list.append((bbox, weights))
