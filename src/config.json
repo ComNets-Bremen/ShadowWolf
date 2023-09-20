@@ -96,8 +96,9 @@
     },{
       "name":"Decision.WeightedDecision.WeightedDecisionClass",
       "iou_threshold": 0.2,
-      "weights" : {"Segment": 0.5, "Detection": 0.5},
-      "ignore_classes_higher" : 200
+      "weights" : {"Segment": 0.6, "Detection": 0.4},
+      "ignore_classes_higher" : 200,
+      "box_combine_method" : "bbox_smaller_box"
     },{
       "name": "Generators.YoloExportGenerator.YoloExportClass",
       "detection_threshold": 0.5
