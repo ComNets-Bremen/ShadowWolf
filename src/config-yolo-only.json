@@ -1,0 +1,44 @@
+{
+  "main_config": {
+    "image_dir"   : "/home/jd/src/comnets-github/mAInZaun/ShadowWolf/ground_truth/reference",
+    "image_filetype": "jpg"
+  },
+  "modules": [
+    {
+      "name": "Analysis.BasicAnalysis.BasicAnalysisClass"
+    },
+    {
+      "name": "Detection.YoloDetection.YoloDetectionClass",
+      "detect_model": "best.pt",
+      "detect_repository": "ultralytics/yolov5",
+      "detect_force_reload": false,
+      "detect_batchsize": 4,
+      "inputs": [
+        {
+          "dataclass": "Storage.DataStorage.BasicAnalysisDataStorage",
+          "getter": "get_all_images"
+        }
+      ]
+    },
+    {
+      "name": "Backmapping.SimpleBackmapping.BackmappingClass",
+      "inputs": [
+        {
+          "dataclass": "Storage.DetectionStorage.DetectionStorage",
+          "getter": "get_images"
+        }
+      ]
+    },{
+      "name":"Decision.WeightedDecision.WeightedDecisionClass",
+      "iou_threshold": 0.2,
+      "weights" : {"Segment": 0.6, "Detection": 0.4},
+      "ignore_classes_higher" : 200,
+      "box_combine_method" : "bbox_smaller_box"
+    },{
+      "name": "Generators.YoloExportGenerator.YoloExportClass",
+      "detection_threshold": 0.5
+    },{
+      "name": "Generators.ReviewExportGenerator.ReviewExportClass"
+    }
+  ]
+}
