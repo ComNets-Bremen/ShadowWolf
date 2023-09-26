@@ -85,10 +85,10 @@ class DetectionStorage:
                 votings["y_min"] = image.y_min
                 votings["y_max"] = image.y_max
             else:
-                votings["x_min"] = votings["x_min"] + image.x_min
                 votings["x_max"] = votings["x_min"] + image.x_max
-                votings["y_min"] = votings["y_min"] + image.y_min
+                votings["x_min"] = votings["x_min"] + image.x_min
                 votings["y_max"] = votings["y_min"] + image.y_max
+                votings["y_min"] = votings["y_min"] + image.y_min
 
 
             votings["votings"].append(
