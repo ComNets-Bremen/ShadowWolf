@@ -77,11 +77,11 @@ for i in args["inputs"]:
     inputs.append({Path(f).stem : f for f in glob.glob(os.path.join(i, f"*.{args['filetype']}"))})
 
 all_files = list(set([item for i in inputs for item in i.keys()]))
-print(all_files)
+l = len(all_files)
 
 Path(args["output"]).mkdir(parents=True, exist_ok=True)
 
-for f in all_files:
+for file_num, f in enumerate(all_files):
     print_images = []
     for num, inp in enumerate(inputs):
         if f in inp:
@@ -107,6 +107,8 @@ for f in all_files:
     for i in concat_img:
         output = np.concatenate((concat_img), axis=int(args["horizontal"]))
         cv2.imwrite(os.path.join(args["output"], f+"."+args["filetype"]), output)
+
+    print(f"{round((file_num+1)/l*100)}% done")
 
 
 
