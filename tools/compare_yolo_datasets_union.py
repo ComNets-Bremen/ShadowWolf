@@ -20,10 +20,13 @@ parser = argparse.ArgumentParser(
 
 
 
-parser.add_argument("--iou", type=float, help="The intersection over union. Defaults to 0.5", default=0.1)
+parser.add_argument("--iou", type=float, help="The intersection over union. Defaults to 0.5", default=0.5)
 parser.add_argument("--ext", type=str, help="The file extension. Defaults to \"txt\"", default="txt")
+parser.add_argument("--iext", type=str, help="The file extension for images. Defaults to \"jpg\"", default="jpg")
 parser.add_argument("ground_truth", type=pathlib.Path, help="The path to the ground truth detections.")
 parser.add_argument("detections", type=pathlib.Path, help="The path to the detections to compare to.")
+parser.add_argument("--images", type=pathlib.Path, help="Input images for optical checks.", default=None)
+parser.add_argument("--output", type=pathlib.Path, help="The output directory if output is generated.", default="output")
 
 args = parser.parse_args()
 
@@ -57,7 +60,7 @@ def bbox_iou(box1, box2):
     return iou
 
 
-def compare_boxes(det_boxes, gt_boxes):
+def compare_boxes(det_boxes, gt_boxes, iou=0.5, image=None, output_image=None):
     # Format: Class, xCenter, yCenter, w, h
     list_gt  = []
     list_det = []
@@ -83,13 +86,62 @@ def compare_boxes(det_boxes, gt_boxes):
                 "box" : [float(x) for x in gt_box.split()[1:]]
                 })
 
+    # Keep boxes in mind we have already printed
+    gt_i_printed  = []
+    det_i_printed = []
+    im = None
+
+    if image is not None and os.path.isfile(image):
+        import cv2
+        im = cv2.imread(image)
+
 
     for gt_i in range(len(list_gt)):
         for det_i in range(len(list_det)):
-            box_correct = bbox_iou(list_gt[gt_i]["box"], list_det[det_i]["box"]) > args.iou
+            box_iou = bbox_iou(list_gt[gt_i]["box"], list_det[det_i]["box"])
+
+
+            box_correct = box_iou > iou
             same_class  = list_gt[gt_i]["class"] == list_det[det_i]["class"]
             gt_detected = list_gt[gt_i]["detected"]
             det_detected= list_det[det_i]["detected"]
+
+            if im is not None:
+                h, w, _ = im.shape
+
+                if gt_i not in gt_i_printed:
+                    box = list_gt[gt_i]["box"]
+                    box = box[0] * w, box[1] * h, box[2] * w, box[3] * h
+                    x_min, y_min = int(box[0] - (box[2]/2)), int(box[1] - (box[3]/2))
+                    x_max, y_max = int(box[0] + (box[2]/2)), int(box[1] + (box[3]/2))
+                    text_size, _ = cv2.getTextSize("GT", cv2.FONT_HERSHEY_PLAIN, 1, 2)
+                    cv2.rectangle(im, (x_min, y_min), (x_max, y_max), (0,0,255), 2)
+                    cv2.rectangle(im, (x_min, y_min), (x_min+text_size[0], y_min+text_size[1]), (0,0,255), -1)
+                    cv2.putText(im, "GT", (x_min, y_min+text_size[1]), cv2.FONT_HERSHEY_PLAIN, 1, (255,255,255), 2)
+                    gt_i_printed.append(gt_i)
+                if det_i not in det_i_printed:
+                    box = list_det[det_i]["box"]
+                    box = box[0] * w, box[1] * h, box[2] * w, box[3] * h
+                    x_min, y_min = int(box[0] - (box[2]/2)), int(box[1] - (box[3]/2))
+                    x_max, y_max = int(box[0] + (box[2]/2)), int(box[1] + (box[3]/2))
+                    text_size, _ = cv2.getTextSize("DET", cv2.FONT_HERSHEY_PLAIN, 1, 2)
+                    cv2.rectangle(im, (x_min, y_min), (x_max, y_max), (0,128,0), 2)
+                    cv2.rectangle(im, (x_max-text_size[0], y_max-text_size[1]), (x_max, y_max), (0,128, 0), -1)
+                    cv2.putText(im, "DET", (x_max-text_size[0], y_max), cv2.FONT_HERSHEY_PLAIN, 1, (255,255,255), 2)
+                    gt_i_printed.append(gt_i)
+                    det_i_printed.append(det_i)
+
+                if box_iou > 0.1:
+                    box1_x_center, box1_y_center =  list_gt[gt_i]["box"][0], list_gt[gt_i]["box"][1]
+                    box2_x_center, box2_y_center =  list_det[det_i]["box"][0], list_det[det_i]["box"][1]
+                    text = f"IoU={box_iou:.2f}"
+                    text_size, _ = cv2.getTextSize(text, cv2.FONT_HERSHEY_PLAIN, 2, 2)
+                    x_center = int(((box1_x_center + box2_x_center) / 2) * w)
+                    y_center = int(((box1_y_center + box2_y_center) / 2 ) * h)
+
+                    cv2.putText(im, text, (int(x_center-(text_size[0]/2)), int(y_center-(text_size[1]/2))), cv2.FONT_HERSHEY_PLAIN, 1, (255,255,255), 2)
+
+
 
             if box_correct and same_class and not gt_detected and not det_detected:
                 tp += 1
@@ -100,14 +152,23 @@ def compare_boxes(det_boxes, gt_boxes):
                 fp += 1
                 list_gt[gt_i]["detected"] = True
                 list_det[det_i]["detected"] = True
+
     for gt in list_gt:
         if not gt["detected"]:
             fn += 1
     for det in list_det:
         if not det["detected"]:
             fp += 1
+    if im is not None:
+        cv2.imwrite(output_image, im)
     return fp, tp, fn, tn
 
+
+output_dir = args.output
+
+if args.images is not None:
+    # Make sure the output dir exists
+    pathlib.Path(output_dir).mkdir(parents=True, exist_ok=True)
 
 
 detections   = glob.glob(os.path.join(args.detections, f"*.{args.ext}"))
@@ -128,7 +189,14 @@ for f in all_filenames:
             det_boxes = [det for det in det_handler.read().split("\n") if len(det)]
             gt_boxes  = [gt for gt in gt_handler.read().split("\n") if len(gt)]
 
-            fp, tp, fn, tn = compare_boxes(det_boxes, gt_boxes)
+            image_filename = None
+
+            if args.images is not None:
+                image_filename = os.path.join(args.images, f"{os.path.splitext(f)[0]}.{args.iext}")
+
+            output_image_filename = os.path.join(output_dir, f"{os.path.splitext(f)[0]}.{args.iext}")
+
+            fp, tp, fn, tn = compare_boxes(det_boxes, gt_boxes, args.iou, image_filename, output_image_filename)
             print(f"Comparing {det_boxes} <-> {gt_boxes} -> fp={fp}, tp={tp}, fn={fn}, fp={fp}")
 
             sumdata["fp"] += fp
